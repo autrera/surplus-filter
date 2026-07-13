@@ -33,6 +33,7 @@
                             placeholder="Search or select models..." 
                             @click.stop="open = true"
                             @keydown.escape="open = false"
+                            @keydown.enter.prevent="handleEnter()"
                         />
                     </div>
                     <div class="chevron" :class="{'open': open}" @click.stop="open = !open">
@@ -58,6 +59,36 @@
                             </li>
                         </template>
                     </ul>
+                </div>
+
+                <div class="actions-container">
+                    <button type="button" class="search-btn" @click="performSearch()" :disabled="isSearching || selected.length === 0">
+                        <span x-show="!isSearching">Search</span>
+                        <span x-show="isSearching">Searching...</span>
+                    </button>
+                </div>
+
+                <div x-show="results.length > 0" class="results-container" x-cloak>
+                    <template x-for="result in results" :key="result.name">
+                        <div class="result-card">
+                            <div class="result-header">
+                                <h3 class="result-title" x-text="result.name"></h3>
+                                <div class="result-price" x-text="'Price: ' + result.price"></div>
+                            </div>
+                            <div class="result-body">
+                                <span class="provider-label">Provider:</span>
+                                <span class="provider-value" x-text="result.provider"></span>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+                
+                <div x-show="!isSearching && searchComplete && results.length === 0" class="empty-state" x-cloak>
+                    No offers found.
+                </div>
+                
+                <div x-show="isSearching" class="loading-state" x-cloak>
+                    Searching best offers...
                 </div>
             </div>
         </div>
