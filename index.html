@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Surplus Models</title>
+    <meta name="description" content="Select AI models from the Surplus Intelligence API">
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script defer src="code.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</head>
+<body class="dark-theme">
+    <main class="app-container">
+        <div class="glass-panel">
+            <h1 class="title">Select Models</h1>
+            <p class="subtitle">Choose one or more AI models to get started.</p>
+
+            <div x-data="multiSelect" class="multi-select-container" @click.away="open = false">
+                <div class="select-input-wrapper" @click="focusInput()">
+                    <div class="selected-tags">
+                        <template x-for="item in selected" :key="item">
+                            <span class="tag">
+                                <span x-text="item"></span>
+                                <button type="button" class="remove-tag" aria-label="Remove option" @click.stop="removeOption(item)">&times;</button>
+                            </span>
+                        </template>
+                        <input 
+                            type="text" 
+                            x-model="search" 
+                            x-ref="searchInput"
+                            class="search-input" 
+                            placeholder="Search or select models..." 
+                            @click.stop="open = true"
+                            @keydown.escape="open = false"
+                        />
+                    </div>
+                    <div class="chevron" :class="{'open': open}" @click.stop="open = !open">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                    </div>
+                </div>
+
+                <div x-show="open" x-transition.opacity class="dropdown-menu" x-cloak>
+                    <div x-show="loading" class="loading-state">Loading models...</div>
+                    <div x-show="!loading && filteredOptions.length === 0" class="empty-state">No models found.</div>
+                    
+                    <ul x-show="!loading && filteredOptions.length > 0" class="options-list">
+                        <template x-for="option in filteredOptions" :key="option">
+                            <li 
+                                class="option-item" 
+                                :class="{'selected': selected.includes(option)}"
+                                @click="toggleOption(option)"
+                            >
+                                <div class="checkbox">
+                                    <svg x-show="selected.includes(option)" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                </div>
+                                <span x-text="option"></span>
+                            </li>
+                        </template>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </main>
+</body>
+</html>
