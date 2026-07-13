@@ -13,7 +13,9 @@ document.addEventListener('alpine:init', () => {
                 const data = await res.json();
                 
                 if (data && data.data && Array.isArray(data.data)) {
-                    this.options = data.data.map(model => model.name);
+                    this.options = data.data
+                        .map(model => model && model.name)
+                        .filter(name => typeof name === 'string');
                 }
             } catch (err) {
                 console.error("Error fetching models:", err);
