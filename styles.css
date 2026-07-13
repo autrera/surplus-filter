@@ -213,7 +213,7 @@ body {
     font-size: 0.95rem;
 }
 
-.option-item:hover {
+.option-item:hover, .option-item.highlighted {
     background: var(--option-hover);
 }
 

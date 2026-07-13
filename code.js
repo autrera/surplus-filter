@@ -9,6 +9,14 @@ document.addEventListener('alpine:init', () => {
         search: '',
         open: false,
         loading: true,
+        highlightedIndex: -1,
+        providers: [],
+        selectedProviders: [],
+
+        get filteredResults() {
+            if (this.selectedProviders.length === 0) return this.results;
+            return this.results.filter(r => this.selectedProviders.includes(r.provider));
+        },
 
         async init() {
             const controller = new AbortController();
@@ -34,12 +42,38 @@ document.addEventListener('alpine:init', () => {
         },
 
         get filteredOptions() {
-            if (this.search === '') {
-                return this.options;
+            let opts = this.options;
+            if (this.search !== '') {
+                opts = this.options.filter(option => 
+                    option.toLowerCase().includes(this.search.toLowerCase())
+                );
             }
-            return this.options.filter(option => 
-                option.toLowerCase().includes(this.search.toLowerCase())
-            );
+            if (this.highlightedIndex >= opts.length) {
+                this.highlightedIndex = -1;
+            }
+            return opts;
+        },
+
+        highlightNext() {
+            if (!this.open) {
+                this.open = true;
+                return;
+            }
+            if (this.highlightedIndex < this.filteredOptions.length - 1) {
+                this.highlightedIndex++;
+            }
+        },
+
+        highlightPrev() {
+            if (this.highlightedIndex > 0) {
+                this.highlightedIndex--;
+            }
+        },
+
+        selectHighlighted() {
+            if (this.open && this.highlightedIndex >= 0 && this.highlightedIndex < this.filteredOptions.length) {
+                this.toggleOption(this.filteredOptions[this.highlightedIndex]);
+            }
         },
 
         toggleOption(option) {
@@ -48,6 +82,12 @@ document.addEventListener('alpine:init', () => {
                 : [...this.selected, option];
             this.search = '';
             this.$refs.searchInput.focus();
+        },
+
+        toggleProvider(provider) {
+            this.selectedProviders = this.selectedProviders.includes(provider)
+                ? this.selectedProviders.filter(p => p !== provider)
+                : [...this.selectedProviders, provider];
         },
 
         removeOption(option) {
@@ -81,22 +121,41 @@ document.addEventListener('alpine:init', () => {
                         if (healthyOffers.length === 0) return null;
                         
                         healthyOffers.sort((a, b) => a.price_per_1m - b.price_per_1m);
-                        const bestOffer = healthyOffers[0];
                         
-                        return {
+                        return healthyOffers.map(bestOffer => ({
                             name: modelName,
                             price: bestOffer.price_per_1m,
+                            input_price: bestOffer.effective_input_per_1m,
+                            output_price: bestOffer.effective_output_per_1m,
                             provider: bestOffer.provider || bestOffer.seller || 'Unknown',
-                        };
+                        }));
                     } catch (e) {
                         return null;
                     }
                 });
                 
                 let searchResults = await Promise.all(searchPromises);
-                searchResults = searchResults.filter(r => r !== null);
+                searchResults = searchResults.filter(r => r !== null).flat();
+                
+                // Keep only the best offer per model per provider
+                const uniqueResults = [];
+                const seen = new Set();
+                for (const r of searchResults) {
+                    const key = `${r.name}-${r.provider}`;
+                    if (!seen.has(key)) {
+                        seen.add(key);
+                        uniqueResults.push(r);
+                    }
+                }
+                searchResults = uniqueResults;
+                
                 searchResults.sort((a, b) => a.price - b.price);
                 this.results = searchResults;
+                
+                const uniqueProviders = new Set(this.results.map(r => r.provider));
+                this.providers = Array.from(uniqueProviders).sort();
+                // Filter out selectedProviders that are no longer in the results
+                this.selectedProviders = this.selectedProviders.filter(p => this.providers.includes(p));
             } catch (err) {
                 console.error("Search error:", err);
             } finally {
@@ -108,12 +167,21 @@ document.addEventListener('alpine:init', () => {
 
         handleEnter() {
             if (this.open) {
-                const first = this.filteredOptions[0];
-                if (first) this.toggleOption(first);
+                if (this.highlightedIndex >= 0 && this.highlightedIndex < this.filteredOptions.length) {
+                    this.toggleOption(this.filteredOptions[this.highlightedIndex]);
+                } else {
+                    const first = this.filteredOptions[0];
+                    if (first) this.toggleOption(first);
+                }
                 this.open = false;
             } else {
                 this.performSearch();
             }
+        },
+
+        formatPrice(price) {
+            if (price === undefined || price === null) return 'N/A';
+            return '$' + (price / 1000000).toFixed(4);
         }
     }));
 });
