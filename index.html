@@ -33,7 +33,7 @@
                             placeholder="Search or select models..." 
                             @click.stop="open = true"
                             @keydown.escape="open = false"
-                            @keydown.enter.prevent="performSearch()"
+                            @keydown.enter.prevent="handleEnter()"
                         />
                     </div>
                     <div class="chevron" :class="{'open': open}" @click.stop="open = !open">
@@ -81,6 +81,10 @@
                             </div>
                         </div>
                     </template>
+                </div>
+                
+                <div x-show="!isSearching && searchComplete && results.length === 0" class="empty-state" x-cloak>
+                    No offers found.
                 </div>
                 
                 <div x-show="isSearching" class="loading-state" x-cloak>
