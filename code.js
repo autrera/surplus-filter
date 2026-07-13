@@ -21,6 +21,11 @@ document.addEventListener('alpine:init', () => {
         async init() {
             const controller = new AbortController();
             const timeout = setTimeout(() => controller.abort(), 10000);
+            this.$watch('search', () => {
+                if (this.highlightedIndex >= this.filteredOptions.length) {
+                    this.highlightedIndex = -1;
+                }
+            });
             try {
                 const res = await fetch('https://api.surplusintelligence.ai/v1/models', { signal: controller.signal });
                 if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
@@ -47,9 +52,6 @@ document.addEventListener('alpine:init', () => {
                 opts = this.options.filter(option => 
                     option.toLowerCase().includes(this.search.toLowerCase())
                 );
-            }
-            if (this.highlightedIndex >= opts.length) {
-                this.highlightedIndex = -1;
             }
             return opts;
         },
