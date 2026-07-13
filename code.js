@@ -17,8 +17,7 @@ document.addEventListener('alpine:init', () => {
                 }
             } catch (err) {
                 console.error("Error fetching models:", err);
-                // Fallback data for demonstration if API fails or blocks CORS
-                this.options = ['Failed to load models (API error)'];
+                this.options = [];
             } finally {
                 this.loading = false;
             }
