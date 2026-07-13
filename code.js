@@ -7,8 +7,10 @@ document.addEventListener('alpine:init', () => {
         loading: true,
 
         async init() {
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), 10000);
             try {
-                const res = await fetch('https://api.surplusintelligence.ai/v1/models');
+                const res = await fetch('https://api.surplusintelligence.ai/v1/models', { signal: controller.signal });
                 if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
                 const data = await res.json();
                 
@@ -21,6 +23,7 @@ document.addEventListener('alpine:init', () => {
                 console.error("Error fetching models:", err);
                 this.options = [];
             } finally {
+                clearTimeout(timeout);
                 this.loading = false;
             }
         },
@@ -35,11 +38,9 @@ document.addEventListener('alpine:init', () => {
         },
 
         toggleOption(option) {
-            if (this.selected.includes(option)) {
-                this.selected = this.selected.filter(i => i !== option);
-            } else {
-                this.selected.push(option);
-            }
+            this.selected = this.selected.includes(option)
+                ? this.selected.filter(i => i !== option)
+                : [...this.selected, option];
             this.search = '';
             this.$refs.searchInput.focus();
         },
