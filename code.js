@@ -131,6 +131,7 @@ document.addEventListener('alpine:init', () => {
                         
                         return healthyOffers.map(bestOffer => ({
                             name: modelName,
+                            id: modelObj.id,
                             price: bestOffer.price_per_1m,
                             input_price: bestOffer.effective_input_per_1m,
                             output_price: bestOffer.effective_output_per_1m,
@@ -189,6 +190,15 @@ document.addEventListener('alpine:init', () => {
         formatPrice(price) {
             if (price === undefined || price === null) return 'N/A';
             return '$' + (price / 1000000).toFixed(4);
+        },
+
+        async copyToClipboard(text) {
+            if (!text) return;
+            try {
+                await navigator.clipboard.writeText(text);
+            } catch (err) {
+                console.error("Failed to copy:", err);
+            }
         }
     }));
 });
