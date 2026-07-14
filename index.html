@@ -16,8 +16,9 @@
             <p class="subtitle">Choose one or more AI models to get started.</p>
 
             <div x-data="multiSelect" class="multi-select-container" @click.away="open = false" @keydown.escape.window="open = false">
-                <div class="select-input-wrapper" @click="focusInput()">
-                    <div class="selected-tags">
+                <div class="dropdown-wrapper" @focusout="if (!$el.contains($event.relatedTarget)) open = false">
+                    <div class="select-input-wrapper" @click="focusInput()">
+                        <div class="selected-tags">
                         <template x-for="item in selected" :key="item">
                             <span class="tag">
                                 <span x-text="item"></span>
@@ -61,7 +62,8 @@
                                 <span x-text="option"></span>
                             </li>
                         </template>
-                    </ul>
+                        </ul>
+                    </div>
                 </div>
 
                 <div class="actions-container">

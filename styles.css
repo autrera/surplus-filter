@@ -111,6 +111,10 @@ body {
 
 /* Multi-select Component */
 .multi-select-container {
+    width: 100%;
+}
+
+.dropdown-wrapper {
     position: relative;
     width: 100%;
 }
@@ -129,8 +133,6 @@ body {
 
 .select-input-wrapper:focus-within {
     background: rgba(118, 118, 128, 0.3);
-    border-color: var(--input-focus-ring);
-    box-shadow: 0 0 0 4px rgba(10, 132, 255, 0.15);
 }
 
 .selected-tags {
@@ -191,6 +193,10 @@ body {
     flex-grow: 1;
     min-width: 120px;
     padding: 4px 0;
+}
+
+.search-input:focus-visible {
+    outline: none;
 }
 
 .search-input::placeholder {
