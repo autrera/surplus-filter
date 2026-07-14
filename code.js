@@ -193,6 +193,7 @@ document.addEventListener('alpine:init', () => {
         },
 
         async copyToClipboard(text, event) {
+            const btn = event && event.currentTarget;
             if (!text) return;
             let success = false;
             try {
@@ -206,7 +207,7 @@ document.addEventListener('alpine:init', () => {
             if (!success) {
                 success = this.fallbackCopy(text);
             }
-            if (success) this.showCopyFeedback(event);
+            if (success) this.showCopyFeedback(btn);
         },
 
         fallbackCopy(text) {
@@ -227,8 +228,7 @@ document.addEventListener('alpine:init', () => {
             }
         },
 
-        showCopyFeedback(event) {
-            const btn = event && event.currentTarget;
+        showCopyFeedback(btn) {
             if (!btn) return;
             const original = btn.innerHTML;
             btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
