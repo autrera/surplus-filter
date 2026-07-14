@@ -56,18 +56,21 @@ document.addEventListener('alpine:init', () => {
             if (cachedData && cacheTime && (now - parseInt(cacheTime, 10)) < CACHE_DURATION) {
                 try {
                     const data = JSON.parse(cachedData);
+                    if (!(data && data.data && Array.isArray(data.data))) {
+                        throw new Error('Cached models data is missing or not an array.');
+                    }
                     this.modelsData = data.data;
                     this.options = data.data
                         .map(model => model && model.name)
                         .filter(name => typeof name === 'string');
                     
                     const ageMinutes = Math.floor((now - parseInt(cacheTime, 10)) / 60000);
-                    this.cacheAgeMessage = `Showing data cached from ${ageMinutes} minute${ageMinutes === 1 ? '' : 's'} ago`;
+                    this.cacheAgeMessage = this.formatCacheAge(ageMinutes);
                     this.loading = false;
                     clearTimeout(timeout);
                     return;
                 } catch (e) {
-                    console.error("Failed to parse cached models:", e);
+                    console.error("Failed to load cached models:", e);
                 }
             }
 
@@ -81,7 +84,7 @@ document.addEventListener('alpine:init', () => {
                     this.options = data.data
                         .map(model => model && model.name)
                         .filter(name => typeof name === 'string');
-                    this.cacheAgeMessage = `Showing data cached from 0 minutes ago`;
+                    this.cacheAgeMessage = this.formatCacheAge(0);
 
                     try {
                         localStorage.setItem(cacheKey, JSON.stringify(data));
@@ -97,6 +100,13 @@ document.addEventListener('alpine:init', () => {
                 clearTimeout(timeout);
                 this.loading = false;
             }
+        },
+
+        formatCacheAge(ageMinutes) {
+            if (ageMinutes <= 0) {
+                return 'Showing data cached from Less than 1 minute ago';
+            }
+            return `Showing data cached from ${ageMinutes} minute${ageMinutes === 1 ? '' : 's'} ago`;
         },
 
         get filteredOptions() {
