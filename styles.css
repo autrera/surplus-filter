@@ -133,6 +133,7 @@ body {
 
 .select-input-wrapper:focus-within {
     background: rgba(118, 118, 128, 0.3);
+    border-color: rgba(255, 255, 255, 0.4);
 }
 
 .selected-tags {
