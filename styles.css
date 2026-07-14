@@ -58,8 +58,8 @@ body {
     -webkit-backdrop-filter: blur(40px) saturate(180%);
     border: 0.5px solid var(--panel-border);
     border-radius: 24px;
-    padding: 40px;
-    padding-bottom: 50px;
+    padding: 25px 40px;
+    /* padding-bottom: 50px; */
     box-shadow: var(--glass-shadow);
     position: relative;
     overflow: visible;
@@ -124,7 +124,7 @@ body {
     min-height: 52px;
     background: var(--input-bg);
     border-radius: 16px;
-    padding: 8px 16px;
+    padding: 8px;
     cursor: text;
     transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
     border: 1.5px solid transparent;
@@ -578,4 +578,26 @@ body {
 button:focus-visible, input:focus-visible {
     outline: 2px solid var(--primary-color);
     outline-offset: 2px;
+}
+
+@media all and (max-width: 450px) { 
+    .app-container {
+      padding: 10px 10px;
+    }
+
+    .glass-panel {
+      padding: 10px 14px;
+    }
+
+    .result-card {
+      padding: 10px;
+    }
+
+    .result-title {
+      flex-wrap: balance;
+    }
+
+    .cache-footer {
+      margin-top: 12px;
+    }
 }
