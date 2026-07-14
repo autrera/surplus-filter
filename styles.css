@@ -316,7 +316,7 @@ body {
     transform: scale(1.05);
 }
 
-.option-item:hover .checkbox:not(.selected) {
+.option-item:not(.selected):hover .checkbox {
     border-color: rgba(255,255,255,0.6);
 }
 
