@@ -12,6 +12,7 @@ document.addEventListener('alpine:init', () => {
         highlightedIndex: -1,
         providers: [],
         selectedProviders: [],
+        cacheAgeMessage: null,
 
         get filteredResults() {
             let filtered = this.results;
@@ -37,16 +38,47 @@ document.addEventListener('alpine:init', () => {
                     this.highlightedIndex = -1;
                 }
             });
+
+            const cacheKey = 'surplus_models_cache';
+            const cacheTimeKey = 'surplus_models_cache_time';
+            const CACHE_DURATION = 10 * 60 * 1000; // 10 minutes
+
+            const cachedData = localStorage.getItem(cacheKey);
+            const cacheTime = localStorage.getItem(cacheTimeKey);
+            const now = Date.now();
+
+            if (cachedData && cacheTime && (now - parseInt(cacheTime, 10)) < CACHE_DURATION) {
+                try {
+                    const data = JSON.parse(cachedData);
+                    this.modelsData = data.data;
+                    this.options = data.data
+                        .map(model => model && model.name)
+                        .filter(name => typeof name === 'string');
+                    
+                    const ageMinutes = Math.floor((now - parseInt(cacheTime, 10)) / 60000);
+                    this.cacheAgeMessage = `Showing data cached from ${ageMinutes} minute${ageMinutes === 1 ? '' : 's'} ago`;
+                    this.loading = false;
+                    clearTimeout(timeout);
+                    return;
+                } catch (e) {
+                    console.error("Failed to parse cached models:", e);
+                }
+            }
+
             try {
                 const res = await fetch('https://api.surplusintelligence.ai/v1/models', { signal: controller.signal });
                 if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
                 const data = await res.json();
                 
                 if (data && data.data && Array.isArray(data.data)) {
+                    localStorage.setItem(cacheKey, JSON.stringify(data));
+                    localStorage.setItem(cacheTimeKey, now.toString());
+
                     this.modelsData = data.data;
                     this.options = data.data
                         .map(model => model && model.name)
                         .filter(name => typeof name === 'string');
+                    this.cacheAgeMessage = `Showing data cached from 0 minutes ago`;
                 }
             } catch (err) {
                 console.error("Error fetching models:", err);
