@@ -14,8 +14,19 @@ document.addEventListener('alpine:init', () => {
         selectedProviders: [],
 
         get filteredResults() {
-            if (this.selectedProviders.length === 0) return this.results;
-            return this.results.filter(r => this.selectedProviders.includes(r.provider));
+            let filtered = this.results;
+            if (this.selectedProviders.length > 0) {
+                filtered = filtered.filter(r => this.selectedProviders.includes(r.provider));
+            }
+            const finalResults = [];
+            const seenModels = new Set();
+            for (const r of filtered) {
+                if (!seenModels.has(r.name)) {
+                    seenModels.add(r.name);
+                    finalResults.push(r);
+                }
+            }
+            return finalResults;
         },
 
         async init() {
