@@ -12,6 +12,7 @@ document.addEventListener('alpine:init', () => {
         highlightedIndex: -1,
         providers: [],
         selectedProviders: [],
+        cacheAgeMessage: null,
 
         get filteredResults() {
             let filtered = this.results;
@@ -37,6 +38,42 @@ document.addEventListener('alpine:init', () => {
                     this.highlightedIndex = -1;
                 }
             });
+
+            const cacheKey = 'surplus_models_cache';
+            const cacheTimeKey = 'surplus_models_cache_time';
+            const CACHE_DURATION = 10 * 60 * 1000; // 10 minutes
+
+            let cachedData = null;
+            let cacheTime = null;
+            try {
+                cachedData = localStorage.getItem(cacheKey);
+                cacheTime = localStorage.getItem(cacheTimeKey);
+            } catch (e) {
+                console.warn('localStorage is unavailable; skipping cache read.', e);
+            }
+            const now = Date.now();
+
+            if (cachedData && cacheTime && (now - parseInt(cacheTime, 10)) < CACHE_DURATION) {
+                try {
+                    const data = JSON.parse(cachedData);
+                    if (!(data && data.data && Array.isArray(data.data))) {
+                        throw new Error('Cached models data is missing or not an array.');
+                    }
+                    this.modelsData = data.data;
+                    this.options = data.data
+                        .map(model => model && model.name)
+                        .filter(name => typeof name === 'string');
+                    
+                    const ageMinutes = Math.floor((now - parseInt(cacheTime, 10)) / 60000);
+                    this.cacheAgeMessage = this.formatCacheAge(ageMinutes);
+                    this.loading = false;
+                    clearTimeout(timeout);
+                    return;
+                } catch (e) {
+                    console.error("Failed to load cached models:", e);
+                }
+            }
+
             try {
                 const res = await fetch('https://api.surplusintelligence.ai/v1/models', { signal: controller.signal });
                 if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
@@ -47,6 +84,14 @@ document.addEventListener('alpine:init', () => {
                     this.options = data.data
                         .map(model => model && model.name)
                         .filter(name => typeof name === 'string');
+                    this.cacheAgeMessage = this.formatCacheAge(0);
+
+                    try {
+                        localStorage.setItem(cacheKey, JSON.stringify(data));
+                        localStorage.setItem(cacheTimeKey, now.toString());
+                    } catch (e) {
+                        console.warn('localStorage is unavailable; skipping cache write.', e);
+                    }
                 }
             } catch (err) {
                 console.error("Error fetching models:", err);
@@ -55,6 +100,13 @@ document.addEventListener('alpine:init', () => {
                 clearTimeout(timeout);
                 this.loading = false;
             }
+        },
+
+        formatCacheAge(ageMinutes) {
+            if (ageMinutes <= 0) {
+                return 'Showing data cached from Less than 1 minute ago';
+            }
+            return `Showing data cached from ${ageMinutes} minute${ageMinutes === 1 ? '' : 's'} ago`;
         },
 
         get filteredOptions() {
