@@ -131,6 +131,7 @@ document.addEventListener('alpine:init', () => {
                         
                         return healthyOffers.map(bestOffer => ({
                             name: modelName,
+                            id: modelObj.id,
                             price: bestOffer.price_per_1m,
                             input_price: bestOffer.effective_input_per_1m,
                             output_price: bestOffer.effective_output_per_1m,
@@ -189,6 +190,50 @@ document.addEventListener('alpine:init', () => {
         formatPrice(price) {
             if (price === undefined || price === null) return 'N/A';
             return '$' + (price / 1000000).toFixed(4);
+        },
+
+        async copyToClipboard(text, event) {
+            const btn = event && event.currentTarget;
+            if (!text) return;
+            let success = false;
+            try {
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    await navigator.clipboard.writeText(text);
+                    success = true;
+                }
+            } catch (err) {
+                console.error("Failed to copy via clipboard API:", err);
+            }
+            if (!success) {
+                success = this.fallbackCopy(text);
+            }
+            if (success) this.showCopyFeedback(btn);
+        },
+
+        fallbackCopy(text) {
+            try {
+                const textarea = document.createElement('textarea');
+                textarea.value = text;
+                textarea.setAttribute('readonly', '');
+                textarea.style.position = 'absolute';
+                textarea.style.left = '-9999px';
+                document.body.appendChild(textarea);
+                textarea.select();
+                const ok = document.execCommand('copy');
+                document.body.removeChild(textarea);
+                return ok;
+            } catch (err) {
+                console.error("Fallback copy failed:", err);
+                return false;
+            }
+        },
+
+        showCopyFeedback(btn) {
+            if (!btn) return;
+            const COPY_ICON = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>';
+            if (btn._copyTimer) clearTimeout(btn._copyTimer);
+            btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+            btn._copyTimer = setTimeout(() => { btn._copyTimer = null; btn.innerHTML = COPY_ICON; }, 1500);
         }
     }));
 });
