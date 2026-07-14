@@ -6,7 +6,6 @@
     <title>Surplus Models</title>
     <meta name="description" content="Select AI models from the Surplus Intelligence API">
     <link rel="stylesheet" href="styles.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script defer src="code.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
@@ -71,12 +70,12 @@
                     </button>
                 </div>
 
-                <div x-show="providers.length > 0" class="filters-container" x-cloak style="margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--glass-border);">
-                    <h3 class="subtitle" style="margin-bottom: 12px; font-size: 0.95rem; font-weight: 500;">Filter by Provider:</h3>
-                    <div class="selected-tags" style="gap: 12px;">
+                <div x-show="providers.length > 0" class="filters-container" x-cloak>
+                    <h3 class="filter-title">Filter by Provider:</h3>
+                    <div class="filter-tags">
                         <template x-for="provider in providers" :key="provider">
-                            <label class="provider-filter" style="display: flex; align-items: center; gap: 8px; cursor: pointer; color: var(--text-primary); font-size: 0.9rem;">
-                                <input type="checkbox" :checked="selectedProviders.includes(provider)" @change="toggleProvider(provider)" style="cursor: pointer; width: 16px; height: 16px;" />
+                            <label class="provider-filter">
+                                <input type="checkbox" :checked="selectedProviders.includes(provider)" @change="toggleProvider(provider)" />
                                 <span x-text="provider"></span>
                             </label>
                         </template>
@@ -87,26 +86,26 @@
                     <template x-for="result in filteredResults" :key="result.name + result.provider">
                         <div class="result-card">
                             <div class="result-header">
-                                <h3 class="result-title" style="display: flex; align-items: center; gap: 8px;">
+                                <h3 class="result-title">
                                     <span x-text="result.name"></span>
-                                    <span style="font-size: 0.8rem; color: var(--text-secondary); font-weight: normal;" x-text="result.id"></span>
+                                    <span class="result-id" x-text="result.id"></span>
                                     <button @click.prevent="copyToClipboard(result.id, $event)" class="copy-btn" title="Copy Model ID" aria-label="Copy Model ID">
                                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
                                     </button>
                                 </h3>
                                 <div class="result-price" x-text="'Total: ' + formatPrice(result.price)"></div>
                             </div>
-                            <div class="result-body" style="flex-direction: column; gap: 6px;">
-                                <div>
+                            <div class="result-body">
+                                <div class="provider-info">
                                     <span class="provider-label">Provider:</span>
                                     <span class="provider-value" x-text="result.provider"></span>
                                 </div>
-                                <div style="display: flex; justify-content: space-between;">
-                                    <div>
+                                <div class="price-details">
+                                    <div class="price-item">
                                         <span class="provider-label">Input (1M):</span>
                                         <span class="provider-value" x-text="formatPrice(result.input_price)"></span>
                                     </div>
-                                    <div>
+                                    <div class="price-item">
                                         <span class="provider-label">Output (1M):</span>
                                         <span class="provider-value" x-text="formatPrice(result.output_price)"></span>
                                     </div>
