@@ -15,7 +15,7 @@
             <h1 class="title">Select Models</h1>
             <p class="subtitle">Choose one or more AI models to get started.</p>
 
-            <div x-data="multiSelect" class="multi-select-container" @click.away="open = false">
+            <div x-data="multiSelect" class="multi-select-container" @click.away="open = false" @keydown.escape.window="open = false">
                 <div class="select-input-wrapper" @click="focusInput()">
                     <div class="selected-tags">
                         <template x-for="item in selected" :key="item">
@@ -31,7 +31,8 @@
                             class="search-input" 
                             placeholder="Search or select models..." 
                             @click.stop="open = true"
-                            @keydown.escape="open = false"
+                            @input="open = true"
+                            @keydown.escape.window="open = false"
                             @keydown.enter.prevent="handleEnter()"
                             @keydown.arrow-down.prevent="highlightNext()"
                             @keydown.arrow-up.prevent="highlightPrev()"
