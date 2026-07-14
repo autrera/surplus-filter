@@ -7,7 +7,9 @@ An Alpine.js multi-select component that fetches and selects AI models from the 
 - Fetches the available models from `https://api.surplusintelligence.ai/v1/models` on load.
 - Renders a searchable, multi-select dropdown where users can pick one or more models.
 - Shows a loading state while the request is in flight and an empty state if no models are found or the request fails.
-- Provides a **Search** button (enabled once one or more models are selected) that queries the market for each selected model and lists the cheapest healthy offer per model, sorted by price. Each result shows the model name, the best offer price, and the provider.
+- Provides a **Search** button (enabled once one or more models are selected) that queries the market for each selected model and lists the cheapest healthy offer per model per provider, sorted by price. Each result shows the model name, the total price, the input price (per 1M tokens), the output price (per 1M tokens), and the provider.
+- Shows provider filter checkboxes after a search; selecting one or more providers narrows the results to those providers, while leaving all unchecked shows every result.
+- Supports keyboard navigation in the dropdown: arrow keys move the highlight, Enter selects the highlighted option (or the first when none is highlighted), and Space selects the highlighted option when the dropdown is open.
 - Shows a loading state while searching, and an empty state ("No offers found.") when no healthy offers match the selected models.
 
 ## Files
