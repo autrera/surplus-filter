@@ -9,7 +9,7 @@ An Alpine.js multi-select component that fetches and selects AI models from the 
 - Shows a loading state while the request is in flight and an empty state if no models are found or the request fails.
 - Provides a **Search** button (enabled once one or more models are selected) that queries the market for each selected model and shows the cheapest healthy offer per model, sorted by price. Only one card is shown per model — its best (cheapest) offer — so the same model is never listed from multiple providers at once. Each result shows the model name, the total price, the input price (per 1M tokens), the output price (per 1M tokens), and the provider.
 - Shows provider filter checkboxes after a search; selecting one or more providers narrows the results to those providers, while leaving all unchecked shows every result.
-- Supports keyboard navigation in the dropdown: arrow keys move the highlight, Enter selects the highlighted option (or the first when none is highlighted), and Space selects the highlighted option when the dropdown is open.
+- Supports keyboard navigation in the dropdown: arrow keys move the highlight, and Enter selects the highlighted option (or the first when none is highlighted).
 - Shows a loading state while searching, and an empty state ("No offers found.") when no healthy offers match the selected models.
 
 ## Files

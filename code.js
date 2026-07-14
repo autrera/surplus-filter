@@ -83,12 +83,6 @@ document.addEventListener('alpine:init', () => {
             }
         },
 
-        selectHighlighted() {
-            if (this.open && this.highlightedIndex >= 0 && this.highlightedIndex < this.filteredOptions.length) {
-                this.toggleOption(this.filteredOptions[this.highlightedIndex]);
-            }
-        },
-
         toggleOption(option) {
             this.selected = this.selected.includes(option)
                 ? this.selected.filter(i => i !== option)

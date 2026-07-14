@@ -36,7 +36,6 @@
                             @keydown.enter.prevent="handleEnter()"
                             @keydown.arrow-down.prevent="highlightNext()"
                             @keydown.arrow-up.prevent="highlightPrev()"
-                            @keydown.space="if (open) { $event.preventDefault(); selectHighlighted(); }"
                         />
                     </div>
                     <div class="chevron" :class="{'open': open}" @click.stop="open = !open">
