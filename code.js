@@ -192,13 +192,47 @@ document.addEventListener('alpine:init', () => {
             return '$' + (price / 1000000).toFixed(4);
         },
 
-        async copyToClipboard(text) {
+        async copyToClipboard(text, event) {
             if (!text) return;
+            let success = false;
             try {
-                await navigator.clipboard.writeText(text);
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    await navigator.clipboard.writeText(text);
+                    success = true;
+                }
             } catch (err) {
-                console.error("Failed to copy:", err);
+                console.error("Failed to copy via clipboard API:", err);
             }
+            if (!success) {
+                success = this.fallbackCopy(text);
+            }
+            if (success) this.showCopyFeedback(event);
+        },
+
+        fallbackCopy(text) {
+            try {
+                const textarea = document.createElement('textarea');
+                textarea.value = text;
+                textarea.setAttribute('readonly', '');
+                textarea.style.position = 'absolute';
+                textarea.style.left = '-9999px';
+                document.body.appendChild(textarea);
+                textarea.select();
+                const ok = document.execCommand('copy');
+                document.body.removeChild(textarea);
+                return ok;
+            } catch (err) {
+                console.error("Fallback copy failed:", err);
+                return false;
+            }
+        },
+
+        showCopyFeedback(event) {
+            const btn = event && event.currentTarget;
+            if (!btn) return;
+            const original = btn.innerHTML;
+            btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+            setTimeout(() => { btn.innerHTML = original; }, 1500);
         }
     }));
 });
