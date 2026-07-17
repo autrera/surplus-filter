@@ -67,6 +67,9 @@
                 </div>
 
                 <div class="actions-container">
+                    <button type="button" class="clear-btn" @click="clearSelected()" :disabled="selected.length === 0" x-show="selected.length > 0" x-cloak>
+                        Clear
+                    </button>
                     <button type="button" class="search-btn" @click="performSearch()" :disabled="isSearching || selected.length === 0">
                         <span x-show="!isSearching">Search</span>
                         <span x-show="isSearching">Searching...</span>
