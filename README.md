@@ -16,9 +16,12 @@ An Alpine.js multi-select component that fetches and selects AI models from the 
 
 ## Files
 
-- `index.html` — markup and Alpine.js directives for the multi-select UI.
+- `index.html` — markup and Alpine.js directives for the multi-select UI, plus the PWA wiring (`manifest.json` link, `theme-color`, and `apple-touch-icon`).
 - `code.js` — the `multiSelect` Alpine component (model fetching, filtering, selection state, and the price-search logic that queries `https://api.surplusintelligence.ai/api/markets/{id}`).
 - `styles.css` — dark glassmorphism styling for the component.
+- `manifest.json` — PWA web app manifest for installability (name, theme color, and the app icons).
+- `icon.svg`, `icon-192.png`, `icon-512.png` — app icons referenced by `manifest.json` (the SVG plus 192×192 and 512×512 PNGs for installation).
+- `icon-180.png` — 180×180 `apple-touch-icon` for iOS Safari home-screen bookmarks.
 
 ## Running locally
 
