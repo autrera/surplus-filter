@@ -34,7 +34,10 @@ document.addEventListener('alpine:init', () => {
             try {
                 const storedSelected = sessionStorage.getItem('surplus_selected_models');
                 if (storedSelected) {
-                    this.selected = JSON.parse(storedSelected);
+                    const parsed = JSON.parse(storedSelected);
+                    if (Array.isArray(parsed)) {
+                        this.selected = parsed;
+                    }
                 }
             } catch (e) {
                 console.warn('Failed to load selected models from sessionStorage', e);
