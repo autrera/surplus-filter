@@ -31,6 +31,18 @@ document.addEventListener('alpine:init', () => {
         },
 
         async init() {
+            try {
+                const storedSelected = sessionStorage.getItem('surplus_selected_models');
+                if (storedSelected) {
+                    const parsed = JSON.parse(storedSelected);
+                    if (Array.isArray(parsed)) {
+                        this.selected = parsed;
+                    }
+                }
+            } catch (e) {
+                console.warn('Failed to load selected models from sessionStorage', e);
+            }
+
             const controller = new AbortController();
             const timeout = setTimeout(() => controller.abort(), 10000);
             this.$watch('search', () => {
@@ -153,6 +165,13 @@ document.addEventListener('alpine:init', () => {
             this.selected = this.selected.filter(i => i !== option);
         },
 
+        clearSelected() {
+            this.selected = [];
+            try {
+                sessionStorage.removeItem('surplus_selected_models');
+            } catch (e) {}
+        },
+
         focusInput() {
             this.open = true;
             this.$refs.searchInput.focus();
@@ -161,6 +180,13 @@ document.addEventListener('alpine:init', () => {
         async performSearch() {
             if (this.isSearching) return;
             if (this.selected.length === 0) return;
+            
+            try {
+                sessionStorage.setItem('surplus_selected_models', JSON.stringify(this.selected));
+            } catch (e) {
+                console.warn('Failed to save selected models to sessionStorage', e);
+            }
+
             this.isSearching = true;
             this.searchComplete = false;
             this.results = [];
