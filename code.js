@@ -12,6 +12,7 @@ document.addEventListener('alpine:init', () => {
         highlightedIndex: -1,
         providers: [],
         selectedProviders: [],
+        savedSets: [],
         cacheAgeMessage: null,
 
         get filteredResults() {
@@ -32,15 +33,15 @@ document.addEventListener('alpine:init', () => {
 
         async init() {
             try {
-                const storedSelected = sessionStorage.getItem('surplus_selected_models');
-                if (storedSelected) {
-                    const parsed = JSON.parse(storedSelected);
+                const storedSets = localStorage.getItem('surplus_saved_sets');
+                if (storedSets) {
+                    const parsed = JSON.parse(storedSets);
                     if (Array.isArray(parsed)) {
-                        this.selected = parsed;
+                        this.savedSets = parsed;
                     }
                 }
             } catch (e) {
-                console.warn('Failed to load selected models from sessionStorage', e);
+                console.warn('Failed to load saved sets from localStorage', e);
             }
 
             const controller = new AbortController();
@@ -167,9 +168,6 @@ document.addEventListener('alpine:init', () => {
 
         clearSelected() {
             this.selected = [];
-            try {
-                sessionStorage.removeItem('surplus_selected_models');
-            } catch (e) {}
         },
 
         focusInput() {
@@ -180,12 +178,6 @@ document.addEventListener('alpine:init', () => {
         async performSearch() {
             if (this.isSearching) return;
             if (this.selected.length === 0) return;
-            
-            try {
-                sessionStorage.setItem('surplus_selected_models', JSON.stringify(this.selected));
-            } catch (e) {
-                console.warn('Failed to save selected models to sessionStorage', e);
-            }
 
             this.isSearching = true;
             this.searchComplete = false;
@@ -312,6 +304,34 @@ document.addEventListener('alpine:init', () => {
             if (btn._copyTimer) clearTimeout(btn._copyTimer);
             btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
             btn._copyTimer = setTimeout(() => { btn._copyTimer = null; btn.innerHTML = COPY_ICON; }, 1500);
+        },
+
+        saveCurrentSet() {
+            if (this.selected.length === 0) return;
+            const isDuplicate = this.savedSets.some(set => 
+                set.length === this.selected.length && set.every(m => this.selected.includes(m))
+            );
+            if (!isDuplicate) {
+                this.savedSets.push([...this.selected]);
+                this.persistSets();
+            }
+        },
+
+        removeSet(index) {
+            this.savedSets.splice(index, 1);
+            this.persistSets();
+        },
+
+        loadSet(set) {
+            this.selected = [...set];
+        },
+
+        persistSets() {
+            try {
+                localStorage.setItem('surplus_saved_sets', JSON.stringify(this.savedSets));
+            } catch (e) {
+                console.warn('Failed to save sets to localStorage', e);
+            }
         }
     }));
 });

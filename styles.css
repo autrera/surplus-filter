@@ -610,6 +610,112 @@ button:focus-visible, input:focus-visible {
     outline-offset: 2px;
 }
 
+.save-btn {
+    background: rgba(50, 215, 75, 0.2);
+    color: var(--success-color);
+    font-family: inherit;
+    font-weight: 600;
+    font-size: 1.05rem;
+    padding: 12px 28px;
+    border: 1px solid rgba(50, 215, 75, 0.3);
+    border-radius: 14px;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.save-btn:hover:not(:disabled) {
+    background: rgba(50, 215, 75, 0.3);
+    transform: translateY(-2px) scale(1.02);
+}
+
+.save-btn:active:not(:disabled) {
+    transform: scale(0.96);
+}
+
+.save-btn:disabled {
+    background: rgba(118, 118, 128, 0.2);
+    color: var(--text-secondary);
+    border-color: transparent;
+    cursor: not-allowed;
+}
+
+.saved-sets-container {
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 0.5px solid var(--panel-border);
+}
+
+.saved-sets-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.saved-set-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(44, 44, 46, 0.6);
+    border: 0.5px solid var(--panel-border);
+    border-radius: 12px;
+    padding: 12px;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+}
+
+.saved-set-models {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    flex-grow: 1;
+}
+
+.saved-set-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-left: 12px;
+}
+
+.load-set-btn {
+    background: var(--primary-color);
+    color: white;
+    font-family: inherit;
+    font-weight: 500;
+    font-size: 0.9rem;
+    padding: 6px 12px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.load-set-btn:hover {
+    background: var(--primary-hover);
+}
+
+.remove-set-btn {
+    background: rgba(255, 69, 58, 0.2);
+    color: var(--danger-color);
+    border: none;
+    cursor: pointer;
+    font-size: 1.2rem;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 12px;
+    padding: 0;
+    transition: all 0.2s;
+}
+
+.remove-set-btn:hover {
+    background: rgba(255, 69, 58, 0.4);
+    color: white;
+}
+
 @media all and (max-width: 450px) { 
     .app-container {
       padding: 10px 10px;
