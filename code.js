@@ -36,7 +36,7 @@ document.addEventListener('alpine:init', () => {
                 const storedSets = localStorage.getItem('surplus_saved_sets');
                 if (storedSets) {
                     const parsed = JSON.parse(storedSets);
-                    if (Array.isArray(parsed)) {
+                    if (Array.isArray(parsed) && parsed.every(s => Array.isArray(s) && s.every(m => typeof m === 'string'))) {
                         this.savedSets = parsed;
                     }
                 }
