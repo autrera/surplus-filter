@@ -194,7 +194,8 @@ document.addEventListener('alpine:init', () => {
                         const res = await fetch(`https://api.surplusintelligence.ai/api/markets/${modelObj.id}`, { signal: controller.signal });
                         if (!res.ok) return null;
                         const data = await res.json();
-                        const healthyOffers = data.offers.filter(o => o.healthy === true);
+                        const availableOffers = data.offers.filter(o => o.available === true);
+                        const healthyOffers = availableOffers.filter(o => o.healthy === true);
                         if (healthyOffers.length === 0) return null;
                         
                         healthyOffers.sort((a, b) => a.price_per_1m - b.price_per_1m);
