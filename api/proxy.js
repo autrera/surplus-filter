@@ -32,7 +32,11 @@ const MODELS_CACHE_CONTROL = 's-maxage=600, stale-while-revalidate=300';
 const PRICES_CACHE_CONTROL = 'no-store';
 const REQUEST_TIMEOUT_MS = 10000;
 
-const MODELS_TARGET_PATTERN = /\/v1\/models$|\/api\/models$/;
+// Exact models endpoints (anchored, matching the normalized URL) so that only
+// the models list is classified as edge-cacheable and priced/generic markets
+// requests are never mislabelled as models responses.
+const MODELS_TARGET_PATTERN =
+  /^https:\/\/api\.surplusintelligence\.ai\/(?:v1|api)\/models$/;
 
 function originAllowed(req) {
   const origin = req.headers.origin;
@@ -43,16 +47,18 @@ function originAllowed(req) {
   return ALLOWED_ORIGIN_PATTERNS.some((re) => re.test(origin));
 }
 
-function targetAllowed(targetUrl) {
-  if (typeof targetUrl !== 'string' || targetUrl.length === 0) return false;
-  let normalized;
+// Normalizes (dot segments, default ports, etc.) so validation matches exactly
+// what fetch() will request; unparseable URLs are rejected with `null`.
+function normalizeTarget(targetUrl) {
+  if (typeof targetUrl !== 'string' || targetUrl.length === 0) return null;
   try {
-    // Normalize (dot segments, case, etc.) so validation matches exactly what
-    // fetch() will request; unparseable URLs are rejected outright.
-    normalized = new URL(targetUrl).href;
+    return new URL(targetUrl).href;
   } catch (err) {
-    return false;
+    return null;
   }
+}
+
+function targetAllowed(normalized) {
   return ALLOWED_TARGET_PATTERNS.some((re) => re.test(normalized));
 }
 
@@ -69,9 +75,10 @@ module.exports = async (req, res) => {
     return;
   }
 
-  // Target URL restriction.
-  const targetUrl = req.query.url;
-  if (!targetAllowed(targetUrl)) {
+  // Target URL restriction. Normalize once and reuse the result for both the
+  // allowlist check and the cache-branch classification so they never disagree.
+  const targetUrl = normalizeTarget(req.query.url);
+  if (!targetUrl || !targetAllowed(targetUrl)) {
     res.status(400).send('Bad Request');
     return;
   }
@@ -91,6 +98,9 @@ module.exports = async (req, res) => {
       upstream.headers.get('content-type') || 'application/json'
     );
     res.setHeader('Cache-Control', isModelsRequest ? MODELS_CACHE_CONTROL : PRICES_CACHE_CONTROL);
+    // Key the edge cache by request origin so the origin restriction applies on
+    // cache hits too, not only when the function runs.
+    if (isModelsRequest) res.setHeader('Vary', 'Origin');
 
     res.send(body);
   } catch (err) {
