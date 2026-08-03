@@ -3,6 +3,11 @@ const MODELS_CACHE_TIME_KEY = 'surplus_models_cache_time';
 const MODELS_CACHE_DURATION = 10 * 60 * 1000; // 10 minutes
 const MODELS_API_URL = 'https://api.surplusintelligence.ai/v1/models';
 const MODELS_LOCAL_FALLBACK = 'models.json';
+const PROXY_ENDPOINT = '/api/proxy'; // Vercel Serverless Function that forwards the Surplus API requests (CORS workaround)
+
+function proxyUrl(targetUrl) {
+    return `${PROXY_ENDPOINT}?url=${encodeURIComponent(targetUrl)}`;
+}
 
 const FALLBACK_CACHE_MESSAGE = 'Showing bundled local model list (remote fetch unavailable)';
 
@@ -91,11 +96,11 @@ document.addEventListener('alpine:init', () => {
                 }
             }
 
-            // Try the remote API. If it fails for any reason (network error, CORS
-            // blocking, non-2xx response, malformed payload), gracefully fall back
+            // Try the remote API through the proxy. If it fails for any reason (network error,
+            // proxy rejection, non-2xx response, malformed payload), gracefully fall back
             // to the bundled local models.json so the UI keeps working.
             try {
-                const res = await fetch(MODELS_API_URL, { signal: controller.signal });
+                const res = await fetch(proxyUrl(MODELS_API_URL), { signal: controller.signal });
                 if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
                 const data = await res.json();
                 this.applyModelsData(data, now);
@@ -218,7 +223,7 @@ document.addEventListener('alpine:init', () => {
                     if (!modelObj) return null;
                     
                     try {
-                        const res = await fetch(`https://api.surplusintelligence.ai/api/markets/${modelObj.id}`, { signal: controller.signal });
+                        const res = await fetch(proxyUrl(`https://api.surplusintelligence.ai/api/markets/${modelObj.id}`), { signal: controller.signal });
                         if (!res.ok) return null;
                         const data = await res.json();
                         const availableOffers = data.offers.filter(o => o.available === true);
