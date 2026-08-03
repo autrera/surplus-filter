@@ -4,7 +4,7 @@ An Alpine.js multi-select component that fetches and selects AI models from the 
 
 ## What it does
 
-- Loads the available models from `https://api.surplusintelligence.ai/v1/models`, using a localStorage cache (10-minute TTL) when fresh and otherwise fetching on load. A footer notes how long ago the shown models were cached.
+- Loads the available models from `https://api.surplusintelligence.ai/v1/models`, using a localStorage cache (10-minute TTL) when fresh and otherwise fetching on load. If the remote fetch fails for any reason (network error, CORS blocking, non-2xx response), the app gracefully falls back to the bundled `models.json` in the repo root so the UI keeps working; a footer notes how long ago the shown models were cached (or that the bundled local list is in use).
 - Renders a searchable, multi-select dropdown where users can pick one or more models.
 - Shows a loading state while the request is in flight and an empty state if no models are found or the request fails.
 - Provides a **Search** button (enabled once one or more models are selected) that queries the market for each selected model and shows the cheapest healthy offer per model, sorted by price. Only one card is shown per model — its best (cheapest) offer — so the same model is never listed from multiple providers at once. Each result shows the model name and model id (with a copy-to-clipboard button), the total price, the input price (per 1M tokens), the output price (per 1M tokens), and the provider.
@@ -17,7 +17,8 @@ An Alpine.js multi-select component that fetches and selects AI models from the 
 ## Files
 
 - `index.html` — markup and Alpine.js directives for the multi-select UI, plus the PWA wiring (`manifest.json` link, `theme-color`, and `apple-touch-icon`).
-- `code.js` — the `multiSelect` Alpine component (model fetching, filtering, selection state, and the price-search logic that queries `https://api.surplusintelligence.ai/api/markets/{id}`).
+- `code.js` — the `multiSelect` Alpine component (model fetching with localStorage cache and local `models.json` fallback, filtering, selection state, and the price-search logic that queries `https://api.surplusintelligence.ai/api/markets/{id}`).
+- `models.json` — bundled fallback model list (same shape as the API response) used when the remote models fetch fails.
 - `styles.css` — dark glassmorphism styling for the component.
 - `manifest.json` — PWA web app manifest for installability (name, theme color, and the app icons).
 - `icon.svg`, `icon-192.png`, `icon-512.png` — app icons referenced by `manifest.json` (the SVG plus 192×192 and 512×512 PNGs for installation).
@@ -25,4 +26,4 @@ An Alpine.js multi-select component that fetches and selects AI models from the 
 
 ## Running locally
 
-Open `index.html` in a browser (or serve the folder with any static file server). Alpine.js is loaded from its CDN, so an internet connection is required on first load (and whenever the models cache is stale) to fetch models.
+Open `index.html` in a browser (or serve the folder with any static file server). The model list is fetched from `https://api.surplusintelligence.ai/v1/models` and falls back to the bundled `models.json` when that fetch fails (e.g., offline or CORS-blocked); serving the folder over HTTP is recommended so the relative `models.json` fallback loads, since it won't via the `file://` protocol. Alpine.js is loaded from its CDN, so an internet connection is still required on first load.
