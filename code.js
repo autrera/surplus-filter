@@ -1,3 +1,11 @@
+const MODELS_CACHE_KEY = 'surplus_models_cache';
+const MODELS_CACHE_TIME_KEY = 'surplus_models_cache_time';
+const MODELS_CACHE_DURATION = 10 * 60 * 1000; // 10 minutes
+const MODELS_API_URL = 'https://api.surplusintelligence.ai/v1/models';
+const MODELS_LOCAL_FALLBACK = 'models.json';
+
+const FALLBACK_CACHE_MESSAGE = 'Showing bundled local model list (remote fetch unavailable)';
+
 document.addEventListener('alpine:init', () => {
     Alpine.data('multiSelect', () => ({
         options: [],
@@ -52,21 +60,17 @@ document.addEventListener('alpine:init', () => {
                 }
             });
 
-            const cacheKey = 'surplus_models_cache';
-            const cacheTimeKey = 'surplus_models_cache_time';
-            const CACHE_DURATION = 10 * 60 * 1000; // 10 minutes
-
             let cachedData = null;
             let cacheTime = null;
             try {
-                cachedData = localStorage.getItem(cacheKey);
-                cacheTime = localStorage.getItem(cacheTimeKey);
+                cachedData = localStorage.getItem(MODELS_CACHE_KEY);
+                cacheTime = localStorage.getItem(MODELS_CACHE_TIME_KEY);
             } catch (e) {
                 console.warn('localStorage is unavailable; skipping cache read.', e);
             }
             const now = Date.now();
 
-            if (cachedData && cacheTime && (now - parseInt(cacheTime, 10)) < CACHE_DURATION) {
+            if (cachedData && cacheTime && (now - parseInt(cacheTime, 10)) < MODELS_CACHE_DURATION) {
                 try {
                     const data = JSON.parse(cachedData);
                     if (!(data && data.data && Array.isArray(data.data))) {
@@ -87,31 +91,54 @@ document.addEventListener('alpine:init', () => {
                 }
             }
 
+            // Try the remote API. If it fails for any reason (network error, CORS
+            // blocking, non-2xx response, malformed payload), gracefully fall back
+            // to the bundled local models.json so the UI keeps working.
             try {
-                const res = await fetch('https://api.surplusintelligence.ai/v1/models', { signal: controller.signal });
+                const res = await fetch(MODELS_API_URL, { signal: controller.signal });
                 if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
                 const data = await res.json();
-                
-                if (data && data.data && Array.isArray(data.data)) {
-                    this.modelsData = data.data;
-                    this.options = data.data
-                        .map(model => model && model.name)
-                        .filter(name => typeof name === 'string');
-                    this.cacheAgeMessage = this.formatCacheAge(0);
-
-                    try {
-                        localStorage.setItem(cacheKey, JSON.stringify(data));
-                        localStorage.setItem(cacheTimeKey, now.toString());
-                    } catch (e) {
-                        console.warn('localStorage is unavailable; skipping cache write.', e);
-                    }
-                }
+                this.applyModelsData(data, now);
             } catch (err) {
-                console.error("Error fetching models:", err);
-                this.options = [];
+                console.error("Error fetching models from remote API; falling back to local models.json:", err);
+                await this.loadLocalModelsFallback();
             } finally {
                 clearTimeout(timeout);
                 this.loading = false;
+            }
+        },
+
+        applyModelsData(data, cacheWriteTime) {
+            if (!(data && data.data && Array.isArray(data.data))) {
+                throw new Error('Models data is missing or not an array.');
+            }
+            this.modelsData = data.data;
+            this.options = data.data
+                .map(model => model && model.name)
+                .filter(name => typeof name === 'string');
+            this.cacheAgeMessage = this.formatCacheAge(0);
+            if (cacheWriteTime !== null && cacheWriteTime !== undefined) {
+                try {
+                    localStorage.setItem(MODELS_CACHE_KEY, JSON.stringify(data));
+                    localStorage.setItem(MODELS_CACHE_TIME_KEY, String(cacheWriteTime));
+                } catch (e) {
+                    console.warn('localStorage is unavailable; skipping cache write.', e);
+                }
+            }
+        },
+
+        async loadLocalModelsFallback() {
+            try {
+                const res = await fetch(MODELS_LOCAL_FALLBACK);
+                if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+                const data = await res.json();
+                // Do not cache the fallback data so a stale local list never hides a
+                // recovery of the live remote API. Mark the source in the footer instead.
+                this.applyModelsData(data, null);
+                this.cacheAgeMessage = FALLBACK_CACHE_MESSAGE;
+            } catch (e) {
+                console.error("Error fetching local models.json:", e);
+                this.options = [];
             }
         },
 
