@@ -26,4 +26,4 @@ An Alpine.js multi-select component that fetches and selects AI models from the 
 
 ## Running locally
 
-Open `index.html` in a browser (or serve the folder with any static file server). Alpine.js is loaded from its CDN, so an internet connection is required on first load (and whenever the models cache is stale) to fetch models.
+Open `index.html` in a browser (or serve the folder with any static file server). The model list is fetched from `https://api.surplusintelligence.ai/v1/models` and falls back to the bundled `models.json` when that fetch fails (e.g., offline or CORS-blocked); serving the folder over HTTP is recommended so the relative `models.json` fallback loads, since it won't via the `file://` protocol. Alpine.js is loaded from its CDN, so an internet connection is still required on first load.
