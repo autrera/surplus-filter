@@ -49,8 +49,11 @@ document.addEventListener('alpine:init', () => {
                 const storedSets = localStorage.getItem('surplus_saved_sets');
                 if (storedSets) {
                     const parsed = JSON.parse(storedSets);
-                    if (Array.isArray(parsed) && parsed.every(s => Array.isArray(s) && s.every(m => typeof m === 'string'))) {
-                        this.savedSets = parsed;
+                    if (Array.isArray(parsed)) {
+                        const validSets = parsed.filter(s => 
+                            Array.isArray(s) && s.every(m => typeof m === 'string' || (m && typeof m === 'object' && typeof m.id === 'string'))
+                        );
+                        this.savedSets = validSets;
                     }
                 }
             } catch (e) {
@@ -81,11 +84,7 @@ document.addEventListener('alpine:init', () => {
                     if (!(data && data.data && Array.isArray(data.data))) {
                         throw new Error('Cached models data is missing or not an array.');
                     }
-                    this.modelsData = data.data;
-                    this.options = data.data
-                        .map(model => model && model.name)
-                        .filter(name => typeof name === 'string');
-                    
+                    this.applyModelsData(data, null);
                     const ageMinutes = Math.floor((now - parseInt(cacheTime, 10)) / 60000);
                     this.cacheAgeMessage = this.formatCacheAge(ageMinutes);
                     this.loading = false;
@@ -122,6 +121,22 @@ document.addEventListener('alpine:init', () => {
                 .map(model => model && model.name)
                 .filter(name => typeof name === 'string');
             this.cacheAgeMessage = this.formatCacheAge(0);
+
+            // Update any legacy string selections to objects if modelsData is now available
+            if (this.selected.length > 0) {
+                this.selected = this.selected.map(item => {
+                    if (typeof item === 'string') {
+                        const found = this.modelsData.find(m => m.name === item || m.id === item);
+                        if (found) {
+                            return { id: found.id, name: found.name };
+                        }
+                    }
+                    return item;
+                });
+            }
+
+            this.migrateSavedSets();
+
             if (cacheWriteTime !== null && cacheWriteTime !== undefined) {
                 try {
                     localStorage.setItem(MODELS_CACHE_KEY, JSON.stringify(data));
@@ -130,6 +145,47 @@ document.addEventListener('alpine:init', () => {
                     console.warn('localStorage is unavailable; skipping cache write.', e);
                 }
             }
+        },
+
+        migrateSavedSets() {
+            if (!this.savedSets || this.savedSets.length === 0) return;
+            let updated = false;
+            this.savedSets = this.savedSets.map(set => {
+                return set.map(item => {
+                    if (typeof item === 'string') {
+                        const found = this.modelsData.find(m => m.name === item || m.id === item);
+                        if (found) {
+                            updated = true;
+                            return { id: found.id, name: found.name };
+                        }
+                    }
+                    return item;
+                });
+            });
+            if (updated) {
+                this.persistSets();
+            }
+        },
+
+        getModelName(item) {
+            if (!item) return '';
+            if (typeof item === 'object') return item.name || item.id || '';
+            return item;
+        },
+
+        getModelKey(item) {
+            if (!item) return '';
+            if (typeof item === 'object') return item.id || item.name || '';
+            return item;
+        },
+
+        isSelected(option) {
+            return this.selected.some(item => {
+                if (typeof item === 'object' && item !== null) {
+                    return item.name === option || item.id === option;
+                }
+                return item === option;
+            });
         },
 
         async loadLocalModelsFallback() {
@@ -181,11 +237,20 @@ document.addEventListener('alpine:init', () => {
         },
 
         toggleOption(option) {
-            this.selected = this.selected.includes(option)
-                ? this.selected.filter(i => i !== option)
-                : [...this.selected, option];
+            if (this.isSelected(option)) {
+                this.removeOption(option);
+            } else {
+                const modelObj = this.modelsData.find(m => m.name === option || m.id === option);
+                if (modelObj) {
+                    this.selected = [...this.selected, { id: modelObj.id, name: modelObj.name }];
+                } else {
+                    this.selected = [...this.selected, { id: option, name: option }];
+                }
+            }
             this.search = '';
-            this.$refs.searchInput.focus();
+            if (this.$refs && this.$refs.searchInput) {
+                this.$refs.searchInput.focus();
+            }
         },
 
         toggleProvider(provider) {
@@ -195,7 +260,14 @@ document.addEventListener('alpine:init', () => {
         },
 
         removeOption(option) {
-            this.selected = this.selected.filter(i => i !== option);
+            const targetName = this.getModelName(option);
+            const targetId = typeof option === 'object' && option !== null ? option.id : null;
+            this.selected = this.selected.filter(s => {
+                if (targetId && typeof s === 'object' && s !== null && s.id) {
+                    return s.id !== targetId;
+                }
+                return this.getModelName(s) !== targetName;
+            });
         },
 
         clearSelected() {
@@ -211,6 +283,19 @@ document.addEventListener('alpine:init', () => {
             if (this.isSearching) return;
             if (this.selected.length === 0) return;
 
+            // If models request is still loading and some selected models lack an explicit ID,
+            // wait briefly for loading to finish so we can resolve the model ID from modelsData.
+            if (this.loading) {
+                const hasMissingId = this.selected.some(item => typeof item === 'string' || !(item && typeof item === 'object' && item.id));
+                if (hasMissingId) {
+                    let waitCount = 0;
+                    while (this.loading && waitCount < 50) {
+                        await new Promise(r => setTimeout(r, 100));
+                        waitCount++;
+                    }
+                }
+            }
+
             this.isSearching = true;
             this.searchComplete = false;
             this.results = [];
@@ -218,14 +303,27 @@ document.addEventListener('alpine:init', () => {
             const controller = new AbortController();
             const timeout = setTimeout(() => controller.abort(), 10000);
             try {
-                const searchPromises = this.selected.map(async (modelName) => {
-                    const modelObj = this.modelsData.find(m => m.name === modelName);
-                    if (!modelObj) return null;
+                const searchPromises = this.selected.map(async (item) => {
+                    let modelId = typeof item === 'object' && item !== null ? item.id : null;
+                    let modelName = typeof item === 'object' && item !== null ? (item.name || item.id) : item;
                     
+                    if (!modelId && this.modelsData.length > 0) {
+                        const modelObj = this.modelsData.find(m => m.name === modelName || m.id === modelName);
+                        if (modelObj) {
+                            modelId = modelObj.id;
+                            modelName = modelObj.name;
+                        }
+                    }
+                    
+                    if (!modelId) {
+                        modelId = modelName;
+                    }
+
                     try {
-                        const res = await fetch(proxyUrl(`https://api.surplusintelligence.ai/api/markets/${modelObj.id}`), { signal: controller.signal });
+                        const res = await fetch(proxyUrl(`https://api.surplusintelligence.ai/api/markets/${modelId}`), { signal: controller.signal });
                         if (!res.ok) return null;
                         const data = await res.json();
+                        if (!data || !Array.isArray(data.offers)) return null;
                         const availableOffers = data.offers.filter(o => o.available === true);
                         const healthyOffers = availableOffers.filter(o => o.healthy === true);
                         if (healthyOffers.length === 0) return null;
@@ -234,7 +332,7 @@ document.addEventListener('alpine:init', () => {
                         
                         return healthyOffers.map(bestOffer => ({
                             name: modelName,
-                            id: modelObj.id,
+                            id: modelId,
                             price: bestOffer.price_per_1m,
                             input_price: bestOffer.effective_input_per_1m,
                             output_price: bestOffer.effective_output_per_1m,
@@ -341,11 +439,31 @@ document.addEventListener('alpine:init', () => {
 
         saveCurrentSet() {
             if (this.selected.length === 0) return;
-            const isDuplicate = this.savedSets.some(set => 
-                set.length === this.selected.length && set.every(m => this.selected.includes(m))
-            );
+            const setToSave = this.selected.map(item => {
+                if (typeof item === 'object' && item !== null && item.id && item.name) {
+                    return { id: item.id, name: item.name };
+                }
+                const name = this.getModelName(item);
+                const modelObj = this.modelsData.find(m => m.name === name || m.id === name);
+                if (modelObj) {
+                    return { id: modelObj.id, name: modelObj.name };
+                }
+                return { id: name, name: name };
+            });
+
+            const isDuplicate = this.savedSets.some(set => {
+                if (set.length !== setToSave.length) return false;
+                return setToSave.every(item => 
+                    set.some(s => {
+                        const sId = typeof s === 'object' && s !== null ? s.id : s;
+                        const sName = typeof s === 'object' && s !== null ? s.name : s;
+                        return sId === item.id || sName === item.name;
+                    })
+                );
+            });
+
             if (!isDuplicate) {
-                this.savedSets.push([...this.selected]);
+                this.savedSets.push(setToSave);
                 this.persistSets();
             }
         },
@@ -356,7 +474,21 @@ document.addEventListener('alpine:init', () => {
         },
 
         loadSet(set) {
-            this.selected = [...set];
+            this.selected = set.map(item => {
+                if (typeof item === 'object' && item !== null && item.id) {
+                    return { id: item.id, name: item.name || item.id };
+                }
+                if (typeof item === 'string') {
+                    if (this.modelsData.length > 0) {
+                        const found = this.modelsData.find(m => m.name === item || m.id === item);
+                        if (found) {
+                            return { id: found.id, name: found.name };
+                        }
+                    }
+                    return { id: item, name: item };
+                }
+                return item;
+            });
         },
 
         persistSets() {

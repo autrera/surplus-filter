@@ -22,9 +22,9 @@
                 <div class="dropdown-wrapper" @focusout="if (!$el.contains($event.relatedTarget)) open = false">
                     <div class="select-input-wrapper" @click="focusInput()">
                         <div class="selected-tags">
-                        <template x-for="item in selected" :key="item">
+                        <template x-for="item in selected" :key="getModelKey(item)">
                             <span class="tag">
-                                <span x-text="item"></span>
+                                <span x-text="getModelName(item)"></span>
                                 <button type="button" class="remove-tag" aria-label="Remove option" @click.stop="removeOption(item)">&times;</button>
                             </span>
                         </template>
@@ -55,12 +55,12 @@
                         <template x-for="(option, index) in filteredOptions" :key="option">
                             <li 
                                 class="option-item" 
-                                :class="{'selected': selected.includes(option), 'highlighted': highlightedIndex === index}"
+                                :class="{'selected': isSelected(option), 'highlighted': highlightedIndex === index}"
                                 @click="toggleOption(option)"
                                 @mouseenter="highlightedIndex = index"
                             >
                                 <div class="checkbox">
-                                    <svg x-show="selected.includes(option)" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                                    <svg x-show="isSelected(option)" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
                                 </div>
                                 <span x-text="option"></span>
                             </li>
@@ -88,8 +88,8 @@
                         <template x-for="(set, index) in savedSets" :key="index">
                             <div class="saved-set-card">
                                 <div class="saved-set-models">
-                                    <template x-for="model in set" :key="model">
-                                        <span class="tag" x-text="model"></span>
+                                    <template x-for="model in set" :key="getModelKey(model)">
+                                        <span class="tag" x-text="getModelName(model)"></span>
                                     </template>
                                 </div>
                                 <div class="saved-set-actions">
