@@ -333,6 +333,47 @@ body {
     100% { opacity: 1; transform: scale(1); }
 }
 
+.card-state {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 20px 16px;
+    font-size: 0.95rem;
+    color: var(--text-secondary);
+    background: rgba(0,0,0,0.2);
+    border-radius: 12px;
+    min-height: 64px;
+}
+
+.card-unavailable {
+    color: var(--text-secondary);
+    font-style: italic;
+}
+
+.spinner {
+    width: 20px;
+    height: 20px;
+    border: 2px solid rgba(255,255,255,0.2);
+    border-top-color: var(--primary-color);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    flex-shrink: 0;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.result-card.loaded {
+    opacity: 1;
+}
+
+.result-card.loading,
+.result-card.unavailable {
+    opacity: 0.85;
+}
+
 /* Search and Results */
 .actions-container {
     margin-top: 24px;
