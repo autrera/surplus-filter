@@ -31,17 +31,22 @@ document.addEventListener('alpine:init', () => {
         get filteredResults() {
             let filtered = this.results;
             if (this.selectedProviders.length > 0) {
-                filtered = filtered.filter(r => this.selectedProviders.includes(r.provider));
+                // A card matches only if it has loaded and offers at least one selected provider.
+                filtered = filtered.filter(r => {
+                    if (r.status !== 'loaded') return false;
+                    return r.offers.some(o => this.selectedProviders.includes(o.provider));
+                });
             }
-            const finalResults = [];
-            const seenModels = new Set();
-            for (const r of filtered) {
-                if (!seenModels.has(r.name)) {
-                    seenModels.add(r.name);
-                    finalResults.push(r);
-                }
+            return filtered;
+        },
+
+        bestOffer(result) {
+            if (!result || result.status !== 'loaded' || !result.offers || !result.offers.length) return null;
+            let offers = result.offers;
+            if (this.selectedProviders.length > 0) {
+                offers = offers.filter(o => this.selectedProviders.includes(o.provider));
             }
-            return finalResults;
+            return offers[0] || null;
         },
 
         async init() {
@@ -299,79 +304,127 @@ document.addEventListener('alpine:init', () => {
             this.isSearching = true;
             this.searchComplete = false;
             this.results = [];
-            
-            const controller = new AbortController();
-            const timeout = setTimeout(() => controller.abort(), 10000);
-            try {
-                const searchPromises = this.selected.map(async (item) => {
-                    let modelId = typeof item === 'object' && item !== null ? item.id : null;
-                    let modelName = typeof item === 'object' && item !== null ? (item.name || item.id) : item;
-                    
-                    if (!modelId && this.modelsData.length > 0) {
-                        const modelObj = this.modelsData.find(m => m.name === modelName || m.id === modelName);
-                        if (modelObj) {
-                            modelId = modelObj.id;
-                            modelName = modelObj.name;
-                        }
-                    }
-                    
-                    if (!modelId) {
-                        modelId = modelName;
-                    }
+            this.providers = [];
+            this.selectedProviders = [];
 
-                    try {
-                        const res = await fetch(proxyUrl(`https://api.surplusintelligence.ai/api/markets/${modelId}`), { signal: controller.signal });
-                        if (!res.ok) return null;
-                        const data = await res.json();
-                        if (!data || !Array.isArray(data.offers)) return null;
-                        const availableOffers = data.offers.filter(o => o.available === true);
-                        const healthyOffers = availableOffers.filter(o => o.healthy === true);
-                        if (healthyOffers.length === 0) return null;
-                        
-                        healthyOffers.sort((a, b) => a.price_per_1m - b.price_per_1m);
-                        
-                        return healthyOffers.map(bestOffer => ({
-                            name: modelName,
-                            id: modelId,
-                            price: bestOffer.price_per_1m,
-                            input_price: bestOffer.effective_input_per_1m,
-                            output_price: bestOffer.effective_output_per_1m,
-                            provider: bestOffer.provider || bestOffer.seller || 'Unknown',
-                        }));
-                    } catch (e) {
-                        return null;
-                    }
-                });
-                
-                let searchResults = await Promise.all(searchPromises);
-                searchResults = searchResults.filter(r => r !== null).flat();
-                
-                // Keep only the best offer per model per provider
-                const uniqueResults = [];
-                const seen = new Set();
-                for (const r of searchResults) {
-                    const key = `${r.name}-${r.provider}`;
-                    if (!seen.has(key)) {
-                        seen.add(key);
-                        uniqueResults.push(r);
+            // Resolve each selected item to a stable model id/name.
+            const cards = this.selected.map(item => {
+                let modelId = typeof item === 'object' && item !== null ? item.id : null;
+                let modelName = typeof item === 'object' && item !== null ? (item.name || item.id) : item;
+
+                if (!modelId && this.modelsData.length > 0) {
+                    const modelObj = this.modelsData.find(m => m.name === modelName || m.id === modelName);
+                    if (modelObj) {
+                        modelId = modelObj.id;
+                        modelName = modelObj.name;
                     }
                 }
-                searchResults = uniqueResults;
-                
-                searchResults.sort((a, b) => a.price - b.price);
-                this.results = searchResults;
-                
-                const uniqueProviders = new Set(this.results.map(r => r.provider));
-                this.providers = Array.from(uniqueProviders).sort();
-                // Filter out selectedProviders that are no longer in the results
-                this.selectedProviders = this.selectedProviders.filter(p => this.providers.includes(p));
-            } catch (err) {
-                console.error("Search error:", err);
-            } finally {
-                clearTimeout(timeout);
-                this.isSearching = false;
-                this.searchComplete = true;
+                if (!modelId) {
+                    modelId = modelName;
+                }
+                return { _key: modelId, name: modelName, id: modelId, status: 'loading', offers: [] };
+            });
+
+            // Show every selected model immediately as a loading card.
+            this.results = cards;
+
+            // Fetch each model independently so cards resolve progressively.
+            await Promise.all(cards.map(card => this._fetchCard(card)));
+
+            this.isSearching = false;
+            this.searchComplete = true;
+        },
+
+        _sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        },
+
+        // Fetch a market URL with per-attempt timeout and up to 3 retries with
+        // progressive backoff (500ms, 1000ms, 1500ms). A hanging request aborts
+        // after the per-attempt timeout so it never blocks the rest of the UI.
+        async _fetchWithRetry(targetUrl) {
+            const backoff = [500, 1000, 1500];
+            const totalAttempts = backoff.length + 1; // initial try + 3 retries
+            let lastErr;
+            for (let attempt = 0; attempt < totalAttempts; attempt++) {
+                if (attempt > 0) await this._sleep(backoff[attempt - 1]);
+                try {
+                    const controller = new AbortController();
+                    const timeout = setTimeout(() => controller.abort(), 10000);
+                    try {
+                        const res = await fetch(proxyUrl(targetUrl), { signal: controller.signal });
+                        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+                        return await res.json();
+                    } finally {
+                        clearTimeout(timeout);
+                    }
+                } catch (e) {
+                    lastErr = e;
+                }
             }
+            throw lastErr;
+        },
+
+        // Fetch price data for one card, then update its state and re-sort by price.
+        async _fetchCard(card) {
+            let parsed = null;
+            try {
+                parsed = await this._fetchWithRetry(`https://api.surplusintelligence.ai/api/markets/${card.id}`);
+            } catch (err) {
+                console.warn('Failed to fetch prices for', card.name, err);
+            }
+
+            if (parsed && Array.isArray(parsed.offers)) {
+                const healthyOffers = parsed.offers.filter(o => o.available === true && o.healthy === true);
+                if (healthyOffers.length > 0) {
+                    healthyOffers.sort((a, b) => a.price_per_1m - b.price_per_1m);
+                    const offers = healthyOffers.map(o => ({
+                        price: o.price_per_1m,
+                        input_price: o.effective_input_per_1m,
+                        output_price: o.effective_output_per_1m,
+                        provider: o.provider || o.seller || 'Unknown',
+                    }));
+                    this._updateCard(card, 'loaded', offers);
+                    return;
+                }
+            }
+            this._updateCard(card, 'unavailable', []);
+        },
+
+        // Apply a card's resolved state, re-sort by price, and refresh provider filters.
+        _updateCard(card, status, offers) {
+            const idx = this.results.findIndex(c => c._key === card._key);
+            if (idx === -1) return;
+            this.results.splice(idx, 1, { ...this.results[idx], status, offers });
+            this.results = this.results.slice(); // force Alpine reactivity reflow
+            this._sortResults();
+            this._updateProviders();
+        },
+
+        // Loaded (priced) cards first ascending by price, then loading, then unavailable.
+        _sortResults() {
+            const rank = s => (s === 'loaded' ? 0 : s === 'loading' ? 1 : 2);
+            this.results.sort((a, b) => {
+                const ra = rank(a.status);
+                const rb = rank(b.status);
+                if (ra !== rb) return ra - rb;
+                const pa = a.status === 'loaded' && a.offers.length ? a.offers[0].price : Infinity;
+                const pb = b.status === 'loaded' && b.offers.length ? b.offers[0].price : Infinity;
+                return pa - pb;
+            });
+        },
+
+        // Rebuild provider filter tags from offers that have resolved so far.
+        _updateProviders() {
+            const unique = new Set();
+            for (const c of this.results) {
+                if (c.status === 'loaded') {
+                    for (const o of c.offers) unique.add(o.provider);
+                }
+            }
+            const next = Array.from(unique).sort();
+            this.providers = next;
+            this.selectedProviders = this.selectedProviders.filter(p => next.includes(p));
         },
 
         handleEnter() {

@@ -113,45 +113,61 @@
                     </div>
                 </div>
 
-                <div x-show="filteredResults.length > 0" class="results-container" x-cloak>
-                    <template x-for="result in filteredResults" :key="result.name + result.provider">
-                        <div class="result-card">
+                <div x-show="results.length > 0" class="results-container" x-cloak>
+                    <template x-for="result in filteredResults" :key="result._key">
+                        <div class="result-card" :class="'card-' + result.status">
                             <div class="result-header">
                                 <h3 class="result-title">
                                     <span x-text="result.name"></span>
                                     <span class="result-id" x-text="result.id"></span>
+                                </h3>
+                                <template x-if="result.status === 'loaded' && bestOffer(result)">
+                                    <div class="result-price" x-text="'Total:&nbsp;' + formatPrice(bestOffer(result).price)"></div>
+                                </template>
+                                <template x-if="result.status === 'loaded' && bestOffer(result)">
                                     <button @click.prevent="copyToClipboard(result.id, $event)" class="copy-btn" title="Copy Model ID" aria-label="Copy Model ID">
                                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
                                     </button>
-                                </h3>
-                                <div class="result-price" x-text="'Total:&nbsp;' + formatPrice(result.price)"></div>
+                                </template>
                             </div>
-                            <div class="result-body">
-                                <div class="provider-info">
-                                    <span class="provider-label">Provider:</span>
-                                    <span class="provider-value" x-text="result.provider"></span>
-                                </div>
-                                <div class="price-details">
-                                    <div class="price-item">
-                                        <span class="provider-label">Input (1M):</span>
-                                        <span class="provider-value" x-text="formatPrice(result.input_price)"></span>
-                                    </div>
-                                    <div class="price-item">
-                                        <span class="provider-label">Output (1M):</span>
-                                        <span class="provider-value" x-text="formatPrice(result.output_price)"></span>
-                                    </div>
-                                </div>
+
+                            <div x-show="result.status === 'loading'" class="card-state card-loading">
+                                <div class="spinner"></div>
+                                <span>Fetching best offer...</span>
                             </div>
+
+                            <div x-show="result.status === 'unavailable'" class="card-state card-unavailable">
+                                No offers available
+                            </div>
+
+                            <template x-if="result.status === 'loaded' && bestOffer(result)">
+                                <div class="result-body">
+                                    <div class="provider-info">
+                                        <span class="provider-label">Provider:</span>
+                                        <span class="provider-value" x-text="bestOffer(result).provider"></span>
+                                    </div>
+                                    <div class="price-details">
+                                        <div class="price-item">
+                                            <span class="provider-label">Input (1M):</span>
+                                            <span class="provider-value" x-text="formatPrice(bestOffer(result).input_price)"></span>
+                                        </div>
+                                        <div class="price-item">
+                                            <span class="provider-label">Output (1M):</span>
+                                            <span class="provider-value" x-text="formatPrice(bestOffer(result).output_price)"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </template>
                         </div>
                     </template>
                 </div>
                 
-                <div x-show="!isSearching && searchComplete && filteredResults.length === 0" class="empty-state" x-cloak>
-                    No offers found.
+                <div x-show="!isSearching && searchComplete && results.length > 0 && filteredResults.length === 0" class="empty-state" x-cloak>
+                    No offers match the current provider filter.
                 </div>
                 
-                <div x-show="isSearching" class="loading-state" x-cloak>
-                    Searching best offers...
+                <div x-show="!isSearching && searchComplete && results.length === 0" class="empty-state" x-cloak>
+                    No offers found.
                 </div>
                 
                 <div x-show="cacheAgeMessage" x-text="cacheAgeMessage" class="cache-footer" x-cloak></div>
