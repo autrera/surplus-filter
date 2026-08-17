@@ -120,15 +120,11 @@
                                 <h3 class="result-title">
                                     <span x-text="result.name"></span>
                                     <span class="result-id" x-text="result.id"></span>
-                                </h3>
-                                <template x-if="result.status === 'loaded' && bestOffer(result)">
-                                    <div class="result-price" x-text="'Total:&nbsp;' + formatPrice(bestOffer(result).price)"></div>
-                                </template>
-                                <template x-if="result.status === 'loaded' && bestOffer(result)">
                                     <button @click.prevent="copyToClipboard(result.id, $event)" class="copy-btn" title="Copy Model ID" aria-label="Copy Model ID">
                                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
                                     </button>
-                                </template>
+                                </h3>
+                                <div class="result-price" x-show="result.status === 'loaded' && bestOffer(result)" x-text="'Total:&nbsp;' + (bestOffer(result) ? formatPrice(bestOffer(result).price) : '')"></div>
                             </div>
 
                             <div x-show="result.status === 'loading'" class="card-state card-loading">
