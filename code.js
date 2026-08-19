@@ -36,6 +36,9 @@ document.addEventListener('alpine:init', () => {
                     if (r.status !== 'loaded') return false;
                     return r.offers.some(o => this.selectedProviders.includes(o.provider));
                 });
+                // Re-rank by the active (provider-filtered) price so cards whose overall
+                // cheapest offer is from an unselected provider drop below cheaper ones.
+                filtered.sort((a, b) => (this.bestOffer(a)?.price ?? Infinity) - (this.bestOffer(b)?.price ?? Infinity));
             }
             return filtered;
         },
