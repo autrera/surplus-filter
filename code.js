@@ -267,6 +267,14 @@ document.addEventListener('alpine:init', () => {
                 : [...this.selectedProviders, provider];
         },
 
+        selectAllProviders() {
+            this.selectedProviders = [...this.providers];
+        },
+
+        clearProviders() {
+            this.selectedProviders = [];
+        },
+
         removeOption(option) {
             const targetName = this.getModelName(option);
             const targetId = typeof option === 'object' && option !== null ? option.id : null;

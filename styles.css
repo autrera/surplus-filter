@@ -590,11 +590,40 @@ body {
     border-top: 0.5px solid var(--panel-border);
 }
 
-.filter-title {
+.filter-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
     margin-bottom: 12px;
+}
+
+.filter-title {
+    margin-bottom: 0;
     font-size: 0.95rem;
     font-weight: 500;
     color: var(--text-secondary);
+}
+
+.filter-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.provider-action-btn {
+    padding: 4px 12px;
+    font-size: 0.85rem;
+    border-radius: 6px;
+    border: 1px solid var(--panel-border, rgba(255,255,255,0.2));
+    background: transparent;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.provider-action-btn:hover {
+    color: var(--text-primary);
+    border-color: var(--primary-color);
 }
 
 .filter-tags {

@@ -102,7 +102,13 @@
                 </div>
 
                 <div x-show="providers.length > 0" class="filters-container" x-cloak>
-                    <h3 class="filter-title">Filter by Provider:</h3>
+                    <div class="filter-header">
+                        <h3 class="filter-title">Filter by Provider:</h3>
+                        <div class="filter-actions">
+                            <button type="button" class="provider-action-btn" @click="selectAllProviders()">All</button>
+                            <button type="button" class="provider-action-btn" @click="clearProviders()" x-show="selectedProviders.length > 0" x-cloak>None</button>
+                        </div>
+                    </div>
                     <div class="filter-tags">
                         <template x-for="provider in providers" :key="provider">
                             <label class="provider-filter">
