@@ -6,7 +6,12 @@ const MODELS_LOCAL_FALLBACK = 'models.json';
 const TRUSTED_PROVIDERS_FILE = 'trusted-providers.json'; // curated snapshot of GET /v1/providers (trusted: true)
 const PROXY_ENDPOINT = '/api/proxy'; // Vercel Serverless Function that forwards the Surplus API requests (CORS workaround)
 
+// On localhost / file:// there is no Vercel function, and the Surplus API allows CORS (*),
+// so fetch it directly. Everywhere else (the deployed site) go through the proxy.
+const USE_PROXY = !(['localhost', '127.0.0.1', '[::1]', ''].includes(location.hostname));
+
 function proxyUrl(targetUrl) {
+    if (!USE_PROXY) return targetUrl;
     return `${PROXY_ENDPOINT}?url=${encodeURIComponent(targetUrl)}`;
 }
 

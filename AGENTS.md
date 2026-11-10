@@ -3,7 +3,7 @@
 This file is the project's committed home for project-intrinsic agent knowledge: build, test, release, architecture, and sharp-edge notes that should travel with the code.
 
 - Add durable project-specific notes here as they are discovered through real work.
-- All Surplus Intelligence API traffic goes through the Vercel Serverless Function `api/proxy.js` (`/api/proxy?url=...`) with origin + target allowlists (see file header and README.md). Run locally with `vercel dev` so `/api/proxy` is served alongside the static app.
+- All Surplus Intelligence API traffic goes through the Vercel Serverless Function `api/proxy.js` (`/api/proxy?url=...`) with origin + target allowlists (see file header and README.md). On `localhost`/`127.0.0.1`/`file://` the app skips the proxy and calls the API directly (it sends `access-control-allow-origin: *`; see `USE_PROXY` in `code.js`), so any static server works locally.
 - Run `node test/self-check.mjs` after touching `code.js`; it mirrors the retry, sort, provider-filter, and trusted-provider resolution logic without a browser.
 
 ## Trusted provider filter
