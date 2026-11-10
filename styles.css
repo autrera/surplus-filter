@@ -574,24 +574,19 @@ body {
 .provider-name {
     display: inline-flex;
     align-items: center;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     gap: 6px;
     min-width: 0;
     overflow-wrap: anywhere;
 }
 
 .trusted-badge {
-    display: inline-block;
-    padding: 1px 7px;
-    border-radius: 10px;
-    font-size: 0.72rem;
-    font-weight: 600;
-    letter-spacing: 0.02em;
-    line-height: 1.5;
-    color: var(--success-color);
-    background: rgba(50, 215, 75, 0.15);
-    border: 0.5px solid rgba(50, 215, 75, 0.3);
-    white-space: nowrap;
+    display: inline-flex;
+    flex-shrink: 0;
+}
+
+.trusted-badge svg {
+    display: block;
 }
 
 .provider-info .result-price {

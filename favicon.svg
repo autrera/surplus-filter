@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Browser-tab favicon: robot as large as the tile allows. Generated together with favicon.svg/icon.svg; keep both in sync. -->
+  <defs>
+    <radialGradient id="g1" cx="10%" cy="20%" r="40%"><stop offset="0" stop-color="#0A84FF" stop-opacity="0.15"/><stop offset="1" stop-color="#0A84FF" stop-opacity="0"/></radialGradient>
+    <radialGradient id="g2" cx="90%" cy="80%" r="40%"><stop offset="0" stop-color="#5E5CE6" stop-opacity="0.15"/><stop offset="1" stop-color="#5E5CE6" stop-opacity="0"/></radialGradient>
+    <radialGradient id="g3" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#BF5AF2" stop-opacity="0.10"/><stop offset="1" stop-color="#BF5AF2" stop-opacity="0"/></radialGradient>
+    <clipPath id="tile"><rect width="512" height="512" rx="100"/></clipPath>
+  </defs>
+  <g clip-path="url(#tile)">
+    <rect width="512" height="512" fill="#000000"/>
+    <rect width="512" height="512" fill="url(#g1)"/>
+    <rect width="512" height="512" fill="url(#g2)"/>
+    <rect width="512" height="512" fill="url(#g3)"/>
+  </g>
+  <g transform="translate(16.0 35.2) scale(4.8)">
+  <rect x="46.5" y="9" width="7" height="14" rx="3" fill="#C3C8F0"/>
+  <circle cx="50" cy="8" r="7.5" fill="#C3C8F0"/>
+  <path d="M2 80V58C2 34 22 20 50 20S98 34 98 58V80Q98 92 86 92H14Q2 92 2 80Z" fill="#C3C8F0"/>
+  <path d="M2 58C2 34 22 20 50 20S98 34 98 58C90 44 74 36 50 36S10 44 2 58Z" fill="#DADDF8"/>
+  <ellipse cx="17" cy="78" rx="6" ry="3.5" fill="#F29BC4" opacity="0.75"/>
+  <ellipse cx="83" cy="78" rx="6" ry="3.5" fill="#F29BC4" opacity="0.75"/>
+  <path d="M45 79Q50 84 55 79" fill="none" stroke="#1A061A" stroke-width="3" stroke-linecap="round"/>
+  <path d="M4 52L16 55M96 52L84 55M44 56Q50 51 56 56" fill="none" stroke="#1A061A" stroke-width="5" stroke-linecap="round"/>
+  <circle cx="30" cy="58" r="15" fill="#EEF0FF" stroke="#1A061A" stroke-width="6"/>
+  <circle cx="70" cy="58" r="15" fill="#EEF0FF" stroke="#1A061A" stroke-width="6"/>
+  <circle cx="32" cy="60" r="6" fill="#1A061A"/>
+  <circle cx="72" cy="60" r="6" fill="#1A061A"/>
+  <circle cx="34" cy="58" r="2" fill="#FFFFFF"/>
+  <circle cx="74" cy="58" r="2" fill="#FFFFFF"/>
+  <path d="M21 51Q24 47 29 47M61 51Q64 47 69 47" fill="none" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round" opacity="0.9"/>
+  </g>
+</svg>
