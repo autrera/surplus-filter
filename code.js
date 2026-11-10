@@ -35,6 +35,10 @@ document.addEventListener('alpine:init', () => {
         providerTrust: {},
         savedSets: [],
         cacheAgeMessage: null,
+        liveMessage: '',
+        saveStatus: '',
+        _liveTimer: null,
+        _saveTimer: null,
 
         get filteredResults() {
             let filtered = this.results;
@@ -49,6 +53,13 @@ document.addEventListener('alpine:init', () => {
                 filtered.sort((a, b) => (this.bestOffer(a)?.price ?? Infinity) - (this.bestOffer(b)?.price ?? Infinity));
             }
             return filtered;
+        },
+
+        // Loaded cards excluded by the active provider filter (loading/unavailable cards are not counted).
+        get hiddenByFilterCount() {
+            if (this.selectedProviders.length === 0) return 0;
+            const loaded = this.results.filter(r => r.status === 'loaded').length;
+            return Math.max(0, loaded - this.filteredResults.length);
         },
 
         // Providers currently listed by the filter that resolve as trusted.
@@ -144,7 +155,8 @@ document.addEventListener('alpine:init', () => {
             this.modelsData = data.data;
             this.options = data.data
                 .map(model => model && model.name)
-                .filter(name => typeof name === 'string');
+                .filter(name => typeof name === 'string')
+                .sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
             this.cacheAgeMessage = this.formatCacheAge(0);
 
             // Update any legacy string selections to objects if modelsData is now available
@@ -230,9 +242,9 @@ document.addEventListener('alpine:init', () => {
 
         formatCacheAge(ageMinutes) {
             if (ageMinutes <= 0) {
-                return 'Showing data cached from Less than 1 minute ago';
+                return 'Model list updated less than a minute ago';
             }
-            return `Showing data cached from ${ageMinutes} minute${ageMinutes === 1 ? '' : 's'} ago`;
+            return `Model list updated ${ageMinutes} minute${ageMinutes === 1 ? '' : 's'} ago`;
         },
 
         get filteredOptions() {
@@ -252,13 +264,31 @@ document.addEventListener('alpine:init', () => {
             }
             if (this.highlightedIndex < this.filteredOptions.length - 1) {
                 this.highlightedIndex++;
+                this.scrollHighlightedIntoView();
             }
         },
 
         highlightPrev() {
             if (this.highlightedIndex > 0) {
                 this.highlightedIndex--;
+                this.scrollHighlightedIntoView();
             }
+        },
+
+        // Keep the keyboard-highlighted option visible inside the scrollable dropdown.
+        scrollHighlightedIntoView() {
+            this.$nextTick(() => {
+                const el = document.getElementById('model-option-' + this.highlightedIndex);
+                if (el) el.scrollIntoView({ block: 'nearest' });
+            });
+        },
+
+        // Announce a short message through the shared aria-live region.
+        announce(message) {
+            this.liveMessage = '';
+            this.$nextTick(() => { this.liveMessage = message; });
+            clearTimeout(this._liveTimer);
+            this._liveTimer = setTimeout(() => { this.liveMessage = ''; }, 4000);
         },
 
         toggleOption(option) {
@@ -546,7 +576,10 @@ document.addEventListener('alpine:init', () => {
             if (!success) {
                 success = this.fallbackCopy(text);
             }
-            if (success) this.showCopyFeedback(btn);
+            if (success) {
+                this.showCopyFeedback(btn);
+                this.announce('Copied ' + text);
+            }
         },
 
         fallbackCopy(text) {
@@ -604,6 +637,11 @@ document.addEventListener('alpine:init', () => {
                 this.savedSets.push(setToSave);
                 this.persistSets();
             }
+            const message = isDuplicate ? 'Already saved' : 'Set saved';
+            this.saveStatus = message;
+            this.announce(message);
+            clearTimeout(this._saveTimer);
+            this._saveTimer = setTimeout(() => { this.saveStatus = ''; }, 2500);
         },
 
         removeSet(index) {

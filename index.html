@@ -15,8 +15,8 @@
 <body class="dark-theme">
     <main class="app-container">
         <div class="glass-panel">
-            <h1 class="title">Select Models</h1>
-            <p class="subtitle">Choose one or more AI models to get started.</p>
+            <h1 class="title">Cheapest model offers</h1>
+            <p class="subtitle">Pick models to compare the cheapest healthy offer for each.</p>
 
             <div x-data="multiSelect" class="multi-select-container" @click.away="open = false" @keydown.escape.window="open = false">
                 <div class="dropdown-wrapper" @focusout="if (!$el.contains($event.relatedTarget)) open = false">
@@ -25,15 +25,22 @@
                         <template x-for="item in selected" :key="getModelKey(item)">
                             <span class="tag">
                                 <span x-text="getModelName(item)"></span>
-                                <button type="button" class="remove-tag" aria-label="Remove option" @click.stop="removeOption(item)">&times;</button>
+                                <button type="button" class="remove-tag" :aria-label="'Remove ' + getModelName(item)" @click.stop="removeOption(item)">&times;</button>
                             </span>
                         </template>
                         <input 
                             type="text" 
+                            role="combobox"
+                            aria-label="Search or select models"
+                            aria-autocomplete="list"
+                            aria-haspopup="listbox"
+                            aria-controls="model-options"
+                            :aria-expanded="open ? 'true' : 'false'"
+                            :aria-activedescendant="open && highlightedIndex >= 0 && highlightedIndex < filteredOptions.length ? 'model-option-' + highlightedIndex : null"
                             x-model="search" 
                             x-ref="searchInput"
                             class="search-input" 
-                            placeholder=" Search or select models..." 
+                            placeholder="Search or select models..." 
                             @click.stop="open = true"
                             @input="open = true"
                             @keydown.escape.window="open = false"
@@ -51,9 +58,12 @@
                     <div x-show="loading" class="loading-state">Loading models...</div>
                     <div x-show="!loading && filteredOptions.length === 0" class="empty-state">No models found.</div>
                     
-                    <ul x-show="!loading && filteredOptions.length > 0" class="options-list">
+                    <ul x-show="!loading && filteredOptions.length > 0" class="options-list" id="model-options" role="listbox" aria-label="Models" aria-multiselectable="true">
                         <template x-for="(option, index) in filteredOptions" :key="option">
                             <li 
+                                role="option"
+                                :id="'model-option-' + index"
+                                :aria-selected="isSelected(option) ? 'true' : 'false'"
                                 class="option-item" 
                                 :class="{'selected': isSelected(option), 'highlighted': highlightedIndex === index}"
                                 @click="toggleOption(option)"
@@ -70,6 +80,7 @@
                 </div>
 
                 <div class="actions-container">
+                    <span class="action-status" x-show="saveStatus" x-text="saveStatus" aria-hidden="true" x-cloak></span>
                     <button type="button" class="clear-btn" @click="clearSelected()" :disabled="selected.length === 0" x-show="selected.length > 0" x-cloak>
                         Clear
                     </button>
@@ -83,7 +94,7 @@
                 </div>
 
                 <div x-show="savedSets.length > 0" class="saved-sets-container" x-cloak>
-                    <h3 class="filter-title">Saved Sets:</h3>
+                    <h3 class="filter-title saved-sets-title">Saved sets</h3>
                     <div class="saved-sets-list">
                         <template x-for="(set, index) in savedSets" :key="index">
                             <div class="saved-set-card">
@@ -94,7 +105,7 @@
                                 </div>
                                 <div class="saved-set-actions">
                                     <button type="button" class="load-set-btn" @click="loadSet(set)">Load</button>
-                                    <button type="button" class="remove-set-btn" @click="removeSet(index)" aria-label="Remove set">&times;</button>
+                                    <button type="button" class="remove-set-btn" @click="removeSet(index)" title="Remove saved set" :aria-label="'Remove saved set: ' + set.map(m => getModelName(m)).join(', ')">&times;</button>
                                 </div>
                             </div>
                         </template>
@@ -102,22 +113,33 @@
                 </div>
 
                 <div x-show="providers.length > 0" class="filters-container" x-cloak>
-                    <div class="filter-header">
-                        <h3 class="filter-title">Filter by Provider:</h3>
-                        <div class="filter-actions">
-                            <button type="button" class="provider-action-btn" @click="selectAllProviders()">All</button>
-                            <button type="button" class="provider-action-btn" @click="selectTrustedProviders()" title="Select only providers curated as trusted by Surplus Intelligence" x-show="trustedProviders.length > 0" x-cloak>Trusted</button>
-                            <button type="button" class="provider-action-btn" @click="clearProviders()" x-show="selectedProviders.length > 0" x-cloak>None</button>
+                    <details class="provider-details">
+                        <summary class="filter-summary">
+                            <span class="filter-title" x-text="selectedProviders.length > 0 ? 'Filter by provider · ' + selectedProviders.length + ' selected' : 'Filter by provider (' + providers.length + ')'"></span>
+                        </summary>
+                        <div class="filter-header">
+                            <div class="filter-actions">
+                                <button type="button" class="provider-action-btn" @click="selectAllProviders()">All</button>
+                                <button type="button" class="provider-action-btn" @click="selectTrustedProviders()" title="Select only providers curated as trusted by Surplus Intelligence" x-show="trustedProviders.length > 0" x-cloak>Trusted</button>
+                                <button type="button" class="provider-action-btn" @click="clearProviders()" x-show="selectedProviders.length > 0" x-cloak>None</button>
+                            </div>
                         </div>
-                    </div>
-                    <div class="filter-tags">
-                        <template x-for="provider in providers" :key="provider">
-                            <label class="provider-filter">
-                                <input type="checkbox" :checked="selectedProviders.includes(provider)" @change="toggleProvider(provider)" />
-                                <span x-text="provider"></span>
-                            </label>
-                        </template>
-                    </div>
+                        <div class="filter-tags">
+                            <template x-for="provider in providers" :key="provider">
+                                <label class="provider-filter">
+                                    <input type="checkbox" :checked="selectedProviders.includes(provider)" @change="toggleProvider(provider)" />
+                                    <span x-text="provider"></span>
+                                    <span class="trusted-badge" x-show="isTrustedProvider(provider)">Trusted</span>
+                                </label>
+                            </template>
+                        </div>
+                    </details>
+                </div>
+
+                <div x-show="hiddenByFilterCount > 0" class="filter-note" x-cloak>
+                    <span x-text="hiddenByFilterCount + (hiddenByFilterCount === 1 ? ' model' : ' models') + ' hidden by provider filter'"></span>
+                    <span aria-hidden="true">&middot;</span>
+                    <button type="button" class="link-btn" @click="clearProviders()">Show all</button>
                 </div>
 
                 <div x-show="results.length > 0" class="results-container" x-cloak>
@@ -127,7 +149,7 @@
                                 <h3 class="result-title">
                                     <span x-text="result.name"></span>
                                     <span class="result-id" x-text="result.id"></span>
-                                    <button @click.prevent="copyToClipboard(result.id, $event)" class="copy-btn" title="Copy Model ID" aria-label="Copy Model ID">
+                                    <button @click.prevent="copyToClipboard(result.id, $event)" class="copy-btn" :title="'Copy model ID ' + result.id" :aria-label="'Copy model ID ' + result.id">
                                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
                                     </button>
                                 </h3>
@@ -145,17 +167,20 @@
                             <template x-if="result.status === 'loaded' && bestOffer(result)">
                                 <div class="result-body">
                                     <div class="provider-info">
-                                        <span class="provider-label">Provider:</span>
-                                        <span class="provider-value" x-text="bestOffer(result).provider"></span>
-                                        <div class="result-price" x-text="'Total:&nbsp;' + formatPrice(bestOffer(result).price)"></div>
+                                        <span class="provider-label">Provider</span>
+                                        <span class="provider-value provider-name">
+                                            <span x-text="bestOffer(result).provider"></span>
+                                            <span class="trusted-badge" x-show="isTrustedProvider(bestOffer(result).provider)">Trusted</span>
+                                        </span>
+                                        <div class="result-price" x-text="'Total / 1M:&nbsp;' + formatPrice(bestOffer(result).price)"></div>
                                     </div>
                                     <div class="price-details">
                                         <div class="price-item">
-                                            <span class="provider-label">Input (1M):</span>
+                                            <span class="provider-label">Input (1M)</span>
                                             <span class="provider-value" x-text="formatPrice(bestOffer(result).input_price)"></span>
                                         </div>
                                         <div class="price-item">
-                                            <span class="provider-label">Output (1M):</span>
+                                            <span class="provider-label">Output (1M)</span>
                                             <span class="provider-value" x-text="formatPrice(bestOffer(result).output_price)"></span>
                                         </div>
                                     </div>
@@ -174,6 +199,8 @@
                 </div>
                 
                 <div x-show="cacheAgeMessage" x-text="cacheAgeMessage" class="cache-footer" x-cloak></div>
+
+                <div class="sr-only" role="status" aria-live="polite" aria-atomic="true" x-text="liveMessage"></div>
             </div>
         </div>
     </main>
