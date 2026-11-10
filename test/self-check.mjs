@@ -2,6 +2,8 @@
 // lives (inline, Alpine) in code.js. Keeps the two non-trivial algorithms
 // runnable without a browser. Run: node test/self-check.mjs
 
+import { readFileSync } from 'node:fs';
+
 // Mirrors _fetchWithRetry semantics: totalAttempts = backoff.length + 1, with
 // exponential-ish backoff between attempts. Returns attempt count taken on
 // success; throws after all attempts fail.
@@ -42,6 +44,39 @@ function bestOffer(result, selectedProviders) {
     offers = offers.filter(o => selectedProviders.includes(o.provider));
   }
   return offers[0] || null;
+}
+
+// Mirrors normalizeProviderKey: case-insensitive, punctuation and spacing ignored.
+function normalizeProviderKey(value) {
+  return String(value || '').toLowerCase().replace(/[^a-z0-9]+/g, '');
+}
+
+// Mirrors loadTrustedProviders: flatten { providers: [{ id, name, aliases }] } into keys.
+function trustedKeysFromFile(file) {
+  const entries = Array.isArray(file) ? file : (file && Array.isArray(file.providers) ? file.providers : []);
+  const keys = [];
+  for (const entry of entries) {
+    const values = typeof entry === 'string'
+      ? [entry]
+      : [entry.id, entry.name, ...(Array.isArray(entry.aliases) ? entry.aliases : [])];
+    for (const value of values) {
+      const key = normalizeProviderKey(value);
+      if (key && !keys.includes(key)) keys.push(key);
+    }
+  }
+  return keys;
+}
+
+// Mirrors isTrustedProvider: a live offer flag wins, the JSON file is the fallback.
+function isTrustedProvider(provider, providerTrust, trustedKeys) {
+  const live = providerTrust[provider];
+  if (typeof live === 'boolean') return live;
+  return trustedKeys.includes(normalizeProviderKey(provider));
+}
+
+// Mirrors the trustedProviders getter plus selectTrustedProviders.
+function trustedProviders(providers, providerTrust, trustedKeys) {
+  return providers.filter(p => isTrustedProvider(p, providerTrust, trustedKeys));
 }
 
 // Mirrors the filteredResults getter: filter to loaded cards offering a selected
@@ -99,6 +134,40 @@ async function main() {
   const unfiltered = filteredResults(providerCards, []).map(c => c._key);
   if (JSON.stringify(unfiltered) !== JSON.stringify(['a', 'b', 'c', 'd'])) {
     throw new Error(`unfiltered passthrough: expected ["a","b","c","d"], got ${JSON.stringify(unfiltered)}`);
+  }
+
+  // 6. Trusted resolution: the bundled JSON file is a valid fallback source.
+  const trustedFile = JSON.parse(readFileSync(new URL('../trusted-providers.json', import.meta.url), 'utf8'));
+  if (!Array.isArray(trustedFile.providers) || trustedFile.providers.length === 0) {
+    throw new Error('trusted-providers.json: expected a non-empty providers array');
+  }
+  for (const entry of trustedFile.providers) {
+    if (!entry || typeof entry.id !== 'string' || typeof entry.name !== 'string') {
+      throw new Error(`trusted-providers.json: invalid entry ${JSON.stringify(entry)}`);
+    }
+    if (entry.aliases !== undefined && !Array.isArray(entry.aliases)) {
+      throw new Error(`trusted-providers.json: aliases must be an array on ${entry.id}`);
+    }
+  }
+  const fileKeys = trustedKeysFromFile(trustedFile);
+  if (!fileKeys.includes('zai') || !fileKeys.includes('engy') || !fileKeys.includes('google')) {
+    throw new Error(`trusted keys: expected zai, engy (alias), google (alias), got ${JSON.stringify(fileKeys)}`);
+  }
+
+  // 7. A live offer flag wins over the file, in both directions.
+  const trust = { OpenRouter: true, Snowflake: false };
+  const providers = ['OpenRouter', 'Snowflake', 'Engy', 'Uncensored AI'];
+  // "Engy" only matches through the file alias; "Uncensored AI" matches by name.
+  const selected = trustedProviders(providers, trust, fileKeys);
+  if (JSON.stringify(selected) !== JSON.stringify(['OpenRouter', 'Engy', 'Uncensored AI'])) {
+    throw new Error(`trusted providers: expected ["OpenRouter","Engy","Uncensored AI"], got ${JSON.stringify(selected)}`);
+  }
+
+  // 8. No live flags at all: the file alone drives the selection, and unknown
+  // providers stay untrusted.
+  const fileOnly = trustedProviders(['Z.ai', 'InferHub', 'OpenAI'], {}, fileKeys);
+  if (JSON.stringify(fileOnly) !== JSON.stringify(['Z.ai', 'OpenAI'])) {
+    throw new Error(`file-only trusted providers: expected ["Z.ai","OpenAI"], got ${JSON.stringify(fileOnly)}`);
   }
 
   console.log('self-check OK');

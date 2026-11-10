@@ -1,0 +1,194 @@
+{
+  "source": "https://api.surplusintelligence.ai/v1/providers",
+  "captured_at": "2026-11-10",
+  "note": "Providers Surplus Intelligence curates as trusted (trusted: true on GET /v1/providers). id, name and aliases are matched case-insensitively against the `provider` field of offers in GET /api/markets/{model}, which is what the app's provider filter lists. Live offers also carry their own boolean `trusted` flag; the app prefers that flag when an offer provides one and falls back to this file. Refresh instructions: AGENTS.md.",
+  "providers": [
+    {
+      "id": "venice",
+      "name": "Venice AI",
+      "host": "api.venice.ai",
+      "aliases": []
+    },
+    {
+      "id": "bankr",
+      "name": "Bankr",
+      "host": "llm.bankr.bot",
+      "aliases": []
+    },
+    {
+      "id": "openrouter",
+      "name": "OpenRouter",
+      "host": "openrouter.ai",
+      "aliases": []
+    },
+    {
+      "id": "typesafe",
+      "name": "TypeSafe",
+      "host": "api.typesafe.ai",
+      "aliases": []
+    },
+    {
+      "id": "bedrock",
+      "name": "Amazon Bedrock",
+      "host": "bedrock-mantle.us-east-2.api.aws",
+      "aliases": [
+        "Bedrock",
+        "AWS Bedrock"
+      ]
+    },
+    {
+      "id": "uncensored",
+      "name": "Uncensored AI",
+      "host": "api.uncensored.com",
+      "aliases": [
+        "Uncensored"
+      ]
+    },
+    {
+      "id": "openai",
+      "name": "OpenAI",
+      "host": "api.openai.com",
+      "aliases": []
+    },
+    {
+      "id": "together",
+      "name": "Together AI",
+      "host": "api.together.xyz",
+      "aliases": []
+    },
+    {
+      "id": "fireworks",
+      "name": "Fireworks AI",
+      "host": "api.fireworks.ai",
+      "aliases": []
+    },
+    {
+      "id": "deepseek",
+      "name": "DeepSeek",
+      "host": "api.deepseek.com",
+      "aliases": []
+    },
+    {
+      "id": "mistral",
+      "name": "Mistral AI",
+      "host": "api.mistral.ai",
+      "aliases": []
+    },
+    {
+      "id": "groq",
+      "name": "Groq",
+      "host": "api.groq.com",
+      "aliases": []
+    },
+    {
+      "id": "mordiem",
+      "name": "Mordiem",
+      "host": "api.mordiem.com",
+      "aliases": []
+    },
+    {
+      "id": "zai",
+      "name": "Z.ai",
+      "host": "api.z.ai",
+      "aliases": []
+    },
+    {
+      "id": "zai-coding",
+      "name": "Z.ai Coding",
+      "host": "api.z.ai",
+      "aliases": [
+        "Z.ai"
+      ]
+    },
+    {
+      "id": "google-ai-studio",
+      "name": "Google Gemini API (AI Studio)",
+      "host": "generativelanguage.googleapis.com",
+      "aliases": [
+        "Google",
+        "Google AI Studio",
+        "Gemini"
+      ]
+    },
+    {
+      "id": "google-vertex",
+      "name": "Google Cloud Vertex AI",
+      "host": "aiplatform.googleapis.com",
+      "aliases": [
+        "Google",
+        "Vertex AI"
+      ]
+    },
+    {
+      "id": "engy",
+      "name": "Engy.ai",
+      "host": "api.engy.ai",
+      "aliases": [
+        "Engy"
+      ]
+    },
+    {
+      "id": "concentrate",
+      "name": "Concentrate.ai",
+      "host": "api.concentrate.ai",
+      "aliases": [
+        "Concentrate"
+      ]
+    },
+    {
+      "id": "anthropic",
+      "name": "Anthropic",
+      "host": "api.anthropic.com",
+      "aliases": []
+    },
+    {
+      "id": "akashml",
+      "name": "AkashML",
+      "host": "api.akashml.com",
+      "aliases": [
+        "Akash ML"
+      ]
+    },
+    {
+      "id": "capminal",
+      "name": "Capminal Gateway",
+      "host": "gw.capminal.ai",
+      "aliases": [
+        "Capminal"
+      ]
+    },
+    {
+      "id": "snowflake",
+      "name": "Snowflake Cortex",
+      "host": "snowflakecomputing.com",
+      "aliases": [
+        "Snowflake"
+      ]
+    },
+    {
+      "id": "dashscope-cn",
+      "name": "Alibaba DashScope — China",
+      "host": "dashscope.aliyuncs.com",
+      "aliases": [
+        "Alibaba DashScope",
+        "DashScope"
+      ]
+    },
+    {
+      "id": "meta",
+      "name": "Meta Model API",
+      "host": "api.meta.ai",
+      "aliases": [
+        "Meta"
+      ]
+    },
+    {
+      "id": "agent-zero",
+      "name": "Agent Zero",
+      "host": "llm.agent-zero.ai",
+      "aliases": [
+        "AgentZero"
+      ]
+    }
+  ]
+}

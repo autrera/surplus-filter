@@ -3,6 +3,7 @@ const MODELS_CACHE_TIME_KEY = 'surplus_models_cache_time';
 const MODELS_CACHE_DURATION = 10 * 60 * 1000; // 10 minutes
 const MODELS_API_URL = 'https://api.surplusintelligence.ai/v1/models';
 const MODELS_LOCAL_FALLBACK = 'models.json';
+const TRUSTED_PROVIDERS_FILE = 'trusted-providers.json'; // curated snapshot of GET /v1/providers (trusted: true)
 const PROXY_ENDPOINT = '/api/proxy'; // Vercel Serverless Function that forwards the Surplus API requests (CORS workaround)
 
 function proxyUrl(targetUrl) {
@@ -25,6 +26,8 @@ document.addEventListener('alpine:init', () => {
         highlightedIndex: -1,
         providers: [],
         selectedProviders: [],
+        trustedProviderKeys: [],
+        providerTrust: {},
         savedSets: [],
         cacheAgeMessage: null,
 
@@ -43,6 +46,11 @@ document.addEventListener('alpine:init', () => {
             return filtered;
         },
 
+        // Providers currently listed by the filter that resolve as trusted.
+        get trustedProviders() {
+            return this.providers.filter(provider => this.isTrustedProvider(provider));
+        },
+
         bestOffer(result) {
             if (!result || result.status !== 'loaded' || !result.offers || !result.offers.length) return null;
             let offers = result.offers;
@@ -53,6 +61,10 @@ document.addEventListener('alpine:init', () => {
         },
 
         async init() {
+            // The trusted list is a local static file, so load it up front. A failure
+            // only drops the file fallback; it never blocks the model list.
+            await this.loadTrustedProviders();
+
             try {
                 const storedSets = localStorage.getItem('surplus_saved_sets');
                 if (storedSets) {
@@ -271,8 +283,52 @@ document.addEventListener('alpine:init', () => {
             this.selectedProviders = [...this.providers];
         },
 
+        selectTrustedProviders() {
+            this.selectedProviders = this.trustedProviders;
+        },
+
         clearProviders() {
             this.selectedProviders = [];
+        },
+
+        // Normalize a provider id or display name so the JSON file and the API's
+        // display names match regardless of case, punctuation, and spacing
+        // (for example "Z.ai" and "zai", or "Engy.ai" and "Engy" via aliases).
+        normalizeProviderKey(value) {
+            return String(value || '').toLowerCase().replace(/[^a-z0-9]+/g, '');
+        },
+
+        // Load the curated trusted-provider snapshot used by the Trusted button.
+        // Shapes accepted: an array of entries, or { providers: [...] }.
+        async loadTrustedProviders() {
+            try {
+                const res = await fetch(TRUSTED_PROVIDERS_FILE);
+                if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+                const data = await res.json();
+                const entries = Array.isArray(data) ? data : (data && Array.isArray(data.providers) ? data.providers : []);
+                const keys = [];
+                for (const entry of entries) {
+                    const values = typeof entry === 'string'
+                        ? [entry]
+                        : [entry.id, entry.name, ...(Array.isArray(entry.aliases) ? entry.aliases : [])];
+                    for (const value of values) {
+                        const key = this.normalizeProviderKey(value);
+                        if (key && !keys.includes(key)) keys.push(key);
+                    }
+                }
+                this.trustedProviderKeys = keys;
+            } catch (e) {
+                console.warn('Failed to load trusted-providers.json; falling back to live offer trust flags only.', e);
+            }
+        },
+
+        // Offers report their own trusted flag. When present it wins, because it is
+        // the live curation signal the marketplace applies; the JSON file is the
+        // fallback for offers that do not report one.
+        isTrustedProvider(provider) {
+            const live = this.providerTrust[provider];
+            if (typeof live === 'boolean') return live;
+            return this.trustedProviderKeys.includes(this.normalizeProviderKey(provider));
         },
 
         removeOption(option) {
@@ -317,6 +373,7 @@ document.addEventListener('alpine:init', () => {
             this.results = [];
             this.providers = [];
             this.selectedProviders = [];
+            this.providerTrust = {};
 
             // Resolve each selected item to a stable model id/name.
             const cards = this.selected.map(item => {
@@ -394,6 +451,7 @@ document.addEventListener('alpine:init', () => {
                         input_price: o.effective_input_per_1m,
                         output_price: o.effective_output_per_1m,
                         provider: o.provider || o.seller || 'Unknown',
+                        trusted: typeof o.trusted === 'boolean' ? o.trusted : null,
                     }));
                     this._updateCard(card, 'loaded', offers);
                     return;
@@ -428,12 +486,23 @@ document.addEventListener('alpine:init', () => {
         // Rebuild provider filter tags from offers that have resolved so far.
         _updateProviders() {
             const unique = new Set();
+            const trust = {};
             for (const c of this.results) {
                 if (c.status === 'loaded') {
-                    for (const o of c.offers) unique.add(o.provider);
+                    for (const o of c.offers) {
+                        unique.add(o.provider);
+                        // Trust is a property of the provider, so a provider is trusted
+                        // only if every offer that reports a flag reports true.
+                        if (typeof o.trusted === 'boolean') {
+                            trust[o.provider] = trust[o.provider] === undefined
+                                ? o.trusted
+                                : (trust[o.provider] && o.trusted);
+                        }
+                    }
                 }
             }
             const next = Array.from(unique).sort();
+            this.providerTrust = trust;
             this.providers = next;
             this.selectedProviders = this.selectedProviders.filter(p => next.includes(p));
         },
