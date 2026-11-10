@@ -175,7 +175,6 @@
                                             <span x-text="bestOffer(result).provider"></span>
                                             <span class="trusted-badge" x-show="isTrustedProvider(bestOffer(result).provider)"><svg class="trusted-icon" width="16" height="16" viewBox="0 0 24 24" role="img" aria-label="Trusted"><title>Trusted by Surplus Intelligence</title><path d="M12 2L4.5 4.6C3.7 4.9 3.2 5.6 3.2 6.4V12C3.2 16.6 6.7 20.3 12 22.3C17.3 20.3 20.8 16.6 20.8 12V6.4C20.8 5.6 20.3 4.9 19.5 4.6Z" fill="#32D74B"/><path d="M7.8 12.2L10.7 15.1L16.3 9.2" fill="none" stroke="#06290F" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
                                         </span>
-                                        <div class="result-price" x-text="'Total / 1M:&nbsp;' + formatPrice(bestOffer(result).price)"></div>
                                     </div>
                                     <div class="price-details">
                                         <div class="price-item">
@@ -185,6 +184,13 @@
                                         <div class="price-item">
                                             <span class="provider-label">Output (1M)</span>
                                             <span class="provider-value" x-text="formatPrice(bestOffer(result).output_price)"></span>
+                                        </div>
+                                        <div class="price-item price-total">
+                                            <span class="provider-label">Total</span>
+                                            <template x-if="cheaperOverall(result)">
+                                                <span class="price-overall" :title="'Cheapest overall: ' + cheaperOverall(result).provider" x-text="formatPrice(cheaperOverall(result).price)"></span>
+                                            </template>
+                                            <span class="provider-value price-total-value" x-text="formatPrice(bestOffer(result).price)"></span>
                                         </div>
                                     </div>
                                 </div>

@@ -76,6 +76,15 @@ document.addEventListener('alpine:init', () => {
             return offers[0] || null;
         },
 
+        // When a provider filter is active and a cheaper offer exists outside it, return that
+        // offer. Offers are sorted ascending, so offers[0] is the cheapest across all providers.
+        cheaperOverall(result) {
+            if (this.selectedProviders.length === 0) return null;
+            const shown = this.bestOffer(result);
+            const overall = result && result.offers && result.offers[0];
+            return shown && overall && overall.price < shown.price ? overall : null;
+        },
+
         async init() {
             // The trusted list is a local static file, so load it up front. A failure
             // only drops the file fallback; it never blocks the model list.

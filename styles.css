@@ -544,16 +544,6 @@ body {
     transform: scale(0.95);
 }
 
-.result-price {
-    background: rgba(50, 215, 75, 0.15);
-    color: var(--success-color);
-    padding: 6px 14px;
-    border-radius: 20px;
-    font-size: 0.85rem;
-    font-weight: 600;
-    border: 0.5px solid rgba(50, 215, 75, 0.3);
-}
-
 .result-body {
     display: flex;
     flex-direction: column;
@@ -589,16 +579,24 @@ body {
     display: block;
 }
 
-.provider-info .result-price {
-    margin-left: auto;
-    white-space: nowrap;
+.price-details {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-items: start;
+    gap: 16px;
 }
 
-.price-details {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 16px;
+.price-overall {
+    color: var(--text-secondary);
+    opacity: 0.6;
+    font-size: 0.85rem;
+    font-variant-numeric: tabular-nums;
+    cursor: help;
+}
+
+.price-item .price-total-value {
+    color: var(--success-color);
+    font-weight: 600;
 }
 
 .price-item {
@@ -615,11 +613,12 @@ body {
     text-align: left;
 }
 
-.price-item .provider-value {
-    font-variant-numeric: tabular-nums;
+.price-item:nth-child(2) {
+    align-items: center;
+    text-align: center;
 }
 
-.result-price {
+.price-item .provider-value {
     font-variant-numeric: tabular-nums;
 }
 
